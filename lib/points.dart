@@ -13,6 +13,11 @@ class Points {
 
   factory Points.fromJson(Map<String, dynamic> json) => _$PointsFromJson(json);
   Map<String, dynamic> toJson() => _$PointsToJson(this);
+
+  @override
+  String toString() {
+    return '${properties.gridId}: ${properties.gridX}, ${properties.gridY}';
+  }
 }
 
 @JsonSerializable()
@@ -26,12 +31,12 @@ class Properties {
   Map<String, dynamic> toJson() => _$PropertiesToJson(this);
 }
 
-Future<Points> fetchPoints() async {
+Future<Points> fetchPoints(double lat, double lon) async {
   final response =
-      await http.get(Uri.parse("https://api.weather.gov/points/44.99,-93.25"));
+      await http.get(Uri.parse('https://api.weather.gov/points/$lat,$lon'));
   if (response.statusCode == 200) {
     return Points.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
   } else {
-    throw Exception("Failed to get Points");
+    throw Exception('Failed to get Points');
   }
 }

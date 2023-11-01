@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:weather_noj/points.dart';
 // import 'package:weather_noj/database.dart';
 
 void main() {
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.dark,
             primary: Colors.grey.shade900,
             onPrimary: Colors.white70,
-            secondary: Colors.blueGrey.shade900,
+            secondary: Colors.blue.shade900,
             onSecondary: Colors.white70,
             error: Colors.red.shade900,
             onError: Colors.white70,
@@ -44,7 +45,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // late DatabaseHelper databaseHelper;
-  int selectedIndex = 0;
+  // int selectedIndex = 0;
 
   List<Widget> pageOptions = <Widget>[
     WeatherInfo(),
@@ -59,10 +60,20 @@ class _HomePageState extends State<HomePage> {
   //     setState(() {});
   //   });
   // }
-  void onItemTapped(int index) {
-    setState(() {
-      selectedIndex = index;
-    });
+  // void onItemTapped(int index) {
+  //   setState(() {
+  //     selectedIndex = index;
+  //   });
+  // }
+
+  Future<void> newCityNavigate(BuildContext context) async {
+    final List<double> result = await Navigator.push(
+        context, MaterialPageRoute(builder: (context) => const NewCityPage()));
+
+    if (!mounted) return;
+
+    Points points = await fetchPoints(result[0], result[1]);
+    print(points.toString());
   }
 
   @override
@@ -74,7 +85,8 @@ class _HomePageState extends State<HomePage> {
           centerTitle: true,
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        body: pageOptions[selectedIndex],
+        body: WeatherInfo(),
+        // body: pageOptions[selectedIndex],
         drawer: Drawer(
           child: ListView(
             padding: EdgeInsets.zero,
@@ -82,18 +94,19 @@ class _HomePageState extends State<HomePage> {
               const DrawerHeader(child: Text('Menu')),
               ListTile(
                 title: Text('Home'),
-                selected: selectedIndex == 0,
+                // selected: selectedIndex == 0,
                 onTap: () {
-                  onItemTapped(0);
+                  // onItemTapped(0);
                   Navigator.pop(context);
                 },
               ),
               ListTile(
                 title: Text('Add New City'),
-                selected: selectedIndex == 1,
+                // selected: selectedIndex == 1,
                 onTap: () {
-                  onItemTapped(1);
+                  // onItemTapped(1);
                   Navigator.pop(context);
+                  newCityNavigate(context);
                 },
               )
             ],
@@ -159,7 +172,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
             padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                  color: Colors.blueGrey.shade900,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.all(Radius.circular(10.0))),
               child: CurrentWeather(currentTemp: _currentTemp),
             ),
@@ -171,7 +184,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
               padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                    color: Colors.blueGrey.shade900,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.all(Radius.circular(10.0))),
                 child: Hourly(hourly: _hourly),
               )),
@@ -209,7 +222,7 @@ class CurrentWeather extends StatelessWidget {
         Padding(
           padding: EdgeInsets.all(8.0),
           child: Text(
-            "Picture",
+            'Picture',
             style: TextStyle(fontSize: 32.0),
           ),
         ),
@@ -249,7 +262,7 @@ class Hourly extends StatelessWidget {
                       style: TextStyle(fontSize: 16.0),
                     ),
                     Text(
-                      "${hourly[i]}°",
+                      '${hourly[i]}°',
                       // "$temp",
                       style: TextStyle(fontSize: 24.0),
                     ),
@@ -353,15 +366,28 @@ class _NewCityPageState extends State<NewCityPage> {
                       hintText: 'Enter Latitude',
                     ),
                     controller: latitudeController,
+                    keyboardType: TextInputType.number,
                   ),
                   TextFormField(
                     decoration: const InputDecoration(
                       hintText: 'Enter Longitude',
                     ),
                     controller: longitudeController,
+                    keyboardType: TextInputType.number,
                   ),
                   ElevatedButton(
-                      onPressed: () {}, child: const Text('Add City'))
+                    onPressed: () {
+                      double? lat = double.tryParse(latitudeController.text);
+                      double? lon = double.tryParse(longitudeController.text);
+                      if (lat != null && lon != null) {
+                        Navigator.pop(context, [lat, lon]);
+                      }
+                    },
+                    style: ButtonStyle(
+                        backgroundColor: MaterialStatePropertyAll<Color>(
+                            Theme.of(context).colorScheme.secondary)),
+                    child: const Text('Add City'),
+                  )
                 ],
               )),
         ));

@@ -15,8 +15,8 @@ class DatabaseHelper {
 
   Future<void> initDB() async {
     String path = await getDatabasesPath();
-    db = await openDatabase(join(path, "city.db"), onCreate: (db, version) {
-      db.execute("""
+    db = await openDatabase(join(path, 'city.db'), onCreate: (db, version) {
+      db.execute('''
 CREATE TABLE CityInfo (
   Id INTEGER PRIMARY KEY AUTOINCREMENT,
   CityName TEXT NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE CityInfo (
   GridY INTEGER NOT NULL,
   Time INTEGER NOT NULL
 )
-      """);
+      ''');
     }, version: 1);
   }
 
@@ -37,7 +37,7 @@ CREATE TABLE CityInfo (
 
   Future<int> updateCityInfo(CityInfo cityInfo) async {
     int result = await db.update('CityInfo', cityInfo.toMap(),
-        where: "Id = ?", whereArgs: [cityInfo.id]);
+        where: 'Id = ?', whereArgs: [cityInfo.id]);
     return result;
   }
 }
