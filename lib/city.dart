@@ -2,6 +2,8 @@ class CityInfo {
   final int id;
   final String cityName;
   final String stateName;
+  final double latitude;
+  final double longitude;
   final String gridId;
   final int gridX;
   final int gridY;
@@ -16,6 +18,8 @@ class CityInfo {
     required this.id,
     required this.cityName,
     required this.stateName,
+    required this.latitude,
+    required this.longitude,
     required this.gridId,
     required this.gridX,
     required this.gridY,
@@ -27,6 +31,8 @@ class CityInfo {
       'Id': id,
       'CityName': cityName,
       'StateName': stateName,
+      'Latitude': latitude,
+      'Longitude': longitude,
       'GridId': gridId,
       'GridX': gridX,
       'GridY': gridY,
@@ -35,11 +41,13 @@ class CityInfo {
   }
 
   CityInfo.fromMap(Map<String, dynamic> res)
-      : id = res["Id"],
-        cityName = res["CityName"],
-        stateName = res["StateName"],
-        gridId = res["GridId"],
-        gridX = res["GridX"],
-        gridY = res["GridY"],
-        time = res["Time"];
+      : id = res['Id'],
+        cityName = res['CityName'],
+        stateName = res['StateName'],
+        latitude = res['Latitude'],
+        longitude = res['Longitude'],
+        gridId = res['GridId'],
+        gridX = res['GridX'],
+        gridY = res['GridY'],
+        time = res['Time'];
 }
