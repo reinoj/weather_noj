@@ -40,4 +40,10 @@ CREATE TABLE CityInfo (
         where: 'Id = ?', whereArgs: [cityInfo.id]);
     return result;
   }
+
+  Future<List<CityInfo>> getCityInfos() async {
+    final List<Map<String, dynamic>> maps = await db.query('CityInfo');
+
+    return List.generate(maps.length, (i) => CityInfo.fromMap(maps[i]));
+  }
 }
