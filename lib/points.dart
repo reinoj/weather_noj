@@ -9,9 +9,12 @@ part 'points.g.dart';
 class Points {
   final Properties properties;
 
-  Points({required this.properties});
+  Points({
+    required this.properties,
+  });
 
   factory Points.fromJson(Map<String, dynamic> json) => _$PointsFromJson(json);
+
   Map<String, dynamic> toJson() => _$PointsToJson(this);
 
   @override
@@ -24,11 +27,49 @@ class Points {
 class Properties {
   final String gridId;
   final int gridX, gridY;
+  final RelativeLocation relativeLocation;
 
-  Properties({required this.gridId, required this.gridX, required this.gridY});
+  Properties({
+    required this.gridId,
+    required this.gridX,
+    required this.gridY,
+    required this.relativeLocation,
+  });
+
   factory Properties.fromJson(Map<String, dynamic> json) =>
       _$PropertiesFromJson(json);
+
   Map<String, dynamic> toJson() => _$PropertiesToJson(this);
+}
+
+@JsonSerializable()
+class RelativeLocation {
+  final RLProperties properties;
+
+  RelativeLocation({
+    required this.properties,
+  });
+
+  factory RelativeLocation.fromJson(Map<String, dynamic> json) =>
+      _$RelativeLocationFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RelativeLocationToJson(this);
+}
+
+@JsonSerializable()
+class RLProperties {
+  final String city;
+  final String state;
+
+  RLProperties({
+    required this.city,
+    required this.state,
+  });
+
+  factory RLProperties.fromJson(Map<String, dynamic> json) =>
+      _$RLPropertiesFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RLPropertiesToJson(this);
 }
 
 Future<Points> fetchPoints(double lat, double lon) async {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+// import 'package:sqflite/sqflite.dart';
+import 'package:weather_noj/city.dart';
+import 'package:weather_noj/database.dart';
 import 'package:weather_noj/points.dart';
-// import 'package:weather_noj/database.dart';
 
 void main() {
   runApp(const MyApp());
@@ -9,7 +11,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -44,27 +45,16 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // late DatabaseHelper databaseHelper;
-  // int selectedIndex = 0;
+  late DatabaseHelper databaseHelper;
 
-  List<Widget> pageOptions = <Widget>[
-    WeatherInfo(),
-    NewCityPage(),
-  ];
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   databaseHelper = DatabaseHelper();
-  //   databaseHelper.initDB().whenComplete(() async {
-  //     setState(() {});
-  //   });
-  // }
-  // void onItemTapped(int index) {
-  //   setState(() {
-  //     selectedIndex = index;
-  //   });
-  // }
+  @override
+  void initState() {
+    super.initState();
+    databaseHelper = DatabaseHelper();
+    databaseHelper.initDB().whenComplete(() async {
+      setState(() {});
+    });
+  }
 
   Future<void> newCityNavigate(BuildContext context) async {
     final List<double> result = await Navigator.push(
@@ -73,50 +63,59 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
 
     Points points = await fetchPoints(result[0], result[1]);
-    print(points.toString());
+    databaseHelper.insertCityInfo(
+      CityInfoCompanion(
+        city: points.properties.relativeLocation.properties.city,
+        state: points.properties.relativeLocation.properties.state,
+        latitude: result[0],
+        longitude: result[1],
+        gridId: points.properties.gridId,
+        gridX: points.properties.gridX,
+        gridY: points.properties.gridY,
+        time: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          title: Text(widget.title),
-          centerTitle: true,
-        ),
+      appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
-        body: WeatherInfo(),
-        // body: pageOptions[selectedIndex],
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const DrawerHeader(child: Text('Menu')),
-              ListTile(
-                title: Text('Home'),
-                // selected: selectedIndex == 0,
-                onTap: () {
-                  // onItemTapped(0);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: Text('Add New City'),
-                // selected: selectedIndex == 1,
-                onTap: () {
-                  // onItemTapped(1);
-                  Navigator.pop(context);
-                  newCityNavigate(context);
-                },
-              )
-            ],
-          ),
-        ));
+        title: Text(widget.title),
+        centerTitle: true,
+      ),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      body: WeatherInfo(databaseHelper: databaseHelper),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(child: Text('Menu')),
+            ListTile(
+              title: Text('Home'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text('Add New City'),
+              onTap: () {
+                Navigator.pop(context);
+                newCityNavigate(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 class WeatherInfo extends StatefulWidget {
-  const WeatherInfo({super.key});
+  const WeatherInfo({super.key, required this.databaseHelper});
+
+  final DatabaseHelper databaseHelper;
 
   @override
   State<WeatherInfo> createState() => _WeatherInfoState();
@@ -162,6 +161,17 @@ class _WeatherInfoState extends State<WeatherInfo> {
     23,
   ];
 
+  Future<void> dbSnackbar() async {
+    final result = await widget.databaseHelper.getCityInfos();
+
+    if (!mounted) return;
+
+    final SnackBar snackBar = SnackBar(
+      content: Text('${result.length}'),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -181,13 +191,15 @@ class _WeatherInfoState extends State<WeatherInfo> {
             height: 16,
           ),
           Padding(
-              padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.all(Radius.circular(10.0))),
-                child: Hourly(hourly: _hourly),
-              )),
+            padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
+              child: Hourly(hourly: _hourly),
+            ),
+          ),
           SizedBox(
             height: 16,
           ),
@@ -195,11 +207,18 @@ class _WeatherInfoState extends State<WeatherInfo> {
             padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                  color: Colors.blueGrey.shade900,
-                  borderRadius: BorderRadius.all(Radius.circular(10.0))),
+                color: Colors.blueGrey.shade900,
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
               child: Forecast(forecast: _forecast),
             ),
-          )
+          ),
+          ElevatedButton(
+            onPressed: () {
+              dbSnackbar();
+            },
+            child: const Text('db'),
+          ),
         ],
       ),
     );
@@ -253,25 +272,26 @@ class Hourly extends StatelessWidget {
           // for (var temp in hourly)
           for (int i = 0; i < hourly.length; i++)
             Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    Text(
-                      // '$tmpCounter',
-                      '$i',
-                      style: TextStyle(fontSize: 16.0),
-                    ),
-                    Text(
-                      '${hourly[i]}°',
-                      // "$temp",
-                      style: TextStyle(fontSize: 24.0),
-                    ),
-                    Text(
-                      '0%',
-                      style: TextStyle(fontSize: 12.0),
-                    ),
-                  ],
-                ))
+              padding: EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Text(
+                    // '$tmpCounter',
+                    '$i',
+                    style: TextStyle(fontSize: 16.0),
+                  ),
+                  Text(
+                    '${hourly[i]}°',
+                    // "$temp",
+                    style: TextStyle(fontSize: 24.0),
+                  ),
+                  Text(
+                    '0%',
+                    style: TextStyle(fontSize: 12.0),
+                  ),
+                ],
+              ),
+            )
         ],
       ),
     );
@@ -291,29 +311,30 @@ class Forecast extends StatelessWidget {
         // for (var [a, e] in forecast)
         for (int i = 0; i < forecast.length; i++)
           Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${i}day',
-                    style: TextStyle(fontSize: 24.0),
-                  ),
-                  Text(
-                    '0%',
-                    style: TextStyle(fontSize: 24.0),
-                  ),
-                  Text(
-                    'A / E',
-                    style: TextStyle(fontSize: 24.0),
-                  ),
-                  Text(
-                    '${forecast[i][0]}° / ${forecast[i][1]}°',
-                    // "$a / $e",
-                    style: TextStyle(fontSize: 24.0),
-                  ),
-                ],
-              ))
+            padding: EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${i}day',
+                  style: TextStyle(fontSize: 24.0),
+                ),
+                Text(
+                  '0%',
+                  style: TextStyle(fontSize: 24.0),
+                ),
+                Text(
+                  'A / E',
+                  style: TextStyle(fontSize: 24.0),
+                ),
+                Text(
+                  '${forecast[i][0]}° / ${forecast[i][1]}°',
+                  // "$a / $e",
+                  style: TextStyle(fontSize: 24.0),
+                ),
+              ],
+            ),
+          )
       ],
     );
   }
@@ -351,45 +372,49 @@ class _NewCityPageState extends State<NewCityPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          title: Text('Add City'),
-          centerTitle: true,
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        title: Text('Add City'),
+        centerTitle: true,
+      ),
+      body: Form(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextFormField(
+                decoration: const InputDecoration(
+                  hintText: 'Enter Latitude',
+                ),
+                controller: latitudeController,
+                keyboardType: TextInputType.number,
+              ),
+              TextFormField(
+                decoration: const InputDecoration(
+                  hintText: 'Enter Longitude',
+                ),
+                controller: longitudeController,
+                keyboardType: TextInputType.number,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  double? lat = double.tryParse(latitudeController.text);
+                  double? lon = double.tryParse(longitudeController.text);
+                  if (lat != null && lon != null) {
+                    Navigator.pop(context, [lat, lon]);
+                  }
+                },
+                style: ButtonStyle(
+                  backgroundColor: MaterialStatePropertyAll<Color>(
+                    Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+                child: const Text('Add City'),
+              )
+            ],
+          ),
         ),
-        body: Form(
-          child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      hintText: 'Enter Latitude',
-                    ),
-                    controller: latitudeController,
-                    keyboardType: TextInputType.number,
-                  ),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      hintText: 'Enter Longitude',
-                    ),
-                    controller: longitudeController,
-                    keyboardType: TextInputType.number,
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      double? lat = double.tryParse(latitudeController.text);
-                      double? lon = double.tryParse(longitudeController.text);
-                      if (lat != null && lon != null) {
-                        Navigator.pop(context, [lat, lon]);
-                      }
-                    },
-                    style: ButtonStyle(
-                        backgroundColor: MaterialStatePropertyAll<Color>(
-                            Theme.of(context).colorScheme.secondary)),
-                    child: const Text('Add City'),
-                  )
-                ],
-              )),
-        ));
+      ),
+    );
   }
 }

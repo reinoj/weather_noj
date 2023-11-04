@@ -1,7 +1,7 @@
 class CityInfo {
   final int id;
-  final String cityName;
-  final String stateName;
+  final String city;
+  final String state;
   final double latitude;
   final double longitude;
   final String gridId;
@@ -16,8 +16,8 @@ class CityInfo {
 
   CityInfo({
     required this.id,
-    required this.cityName,
-    required this.stateName,
+    required this.city,
+    required this.state,
     required this.latitude,
     required this.longitude,
     required this.gridId,
@@ -29,8 +29,8 @@ class CityInfo {
   Map<String, dynamic> toMap() {
     return {
       'Id': id,
-      'CityName': cityName,
-      'StateName': stateName,
+      'CityName': city,
+      'StateName': state,
       'Latitude': latitude,
       'Longitude': longitude,
       'GridId': gridId,
@@ -42,8 +42,52 @@ class CityInfo {
 
   CityInfo.fromMap(Map<String, dynamic> res)
       : id = res['Id'],
-        cityName = res['CityName'],
-        stateName = res['StateName'],
+        city = res['City'],
+        state = res['State'],
+        latitude = res['Latitude'],
+        longitude = res['Longitude'],
+        gridId = res['GridId'],
+        gridX = res['GridX'],
+        gridY = res['GridY'],
+        time = res['Time'];
+}
+
+class CityInfoCompanion {
+  final String city;
+  final String state;
+  final double latitude;
+  final double longitude;
+  final String gridId;
+  final int gridX;
+  final int gridY;
+  final int time;
+
+  CityInfoCompanion(
+      {required this.city,
+      required this.state,
+      required this.latitude,
+      required this.longitude,
+      required this.gridId,
+      required this.gridX,
+      required this.gridY,
+      required this.time});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'City': city,
+      'State': state,
+      'Latitude': latitude,
+      'Longitude': longitude,
+      'GridId': gridId,
+      'GridX': gridX,
+      'GridY': gridY,
+      'Time': time,
+    };
+  }
+
+  CityInfoCompanion.fromMap(Map<String, dynamic> res)
+      : city = res['City'],
+        state = res['State'],
         latitude = res['Latitude'],
         longitude = res['Longitude'],
         gridId = res['GridId'],

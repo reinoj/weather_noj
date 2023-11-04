@@ -15,12 +15,14 @@ class DatabaseHelper {
 
   Future<void> initDB() async {
     String path = await getDatabasesPath();
-    db = await openDatabase(join(path, 'city.db'), onCreate: (db, version) {
+    db = await openDatabase(join(path, 'City.db'), onCreate: (db, version) {
       db.execute('''
 CREATE TABLE CityInfo (
   Id INTEGER PRIMARY KEY AUTOINCREMENT,
-  CityName TEXT NOT NULL,
-  StateName TEXT NOT NULL,
+  City TEXT NOT NULL,
+  State TEXT NOT NULL,
+  Latitude REAL NOT NULL,
+  Longitude REAL NOT NULL,
   GridId TEXT NOT NULL,
   GridX INTEGER NOT NULL,
   GridY INTEGER NOT NULL,
@@ -30,8 +32,8 @@ CREATE TABLE CityInfo (
     }, version: 1);
   }
 
-  Future<int> insertCityInfo(CityInfo cityInfo) async {
-    int result = await db.insert('CityInfo', cityInfo.toMap());
+  Future<int> insertCityInfo(CityInfoCompanion cityInfoCompanion) async {
+    int result = await db.insert('CityInfo', cityInfoCompanion.toMap());
     return result;
   }
 
