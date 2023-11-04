@@ -48,4 +48,6 @@ CREATE TABLE CityInfo (
 
     return List.generate(maps.length, (i) => CityInfo.fromMap(maps[i]));
   }
+
+  Future<CityInfo> getCityInfo() async {}
 }

@@ -8,14 +8,15 @@ part of 'points.dart';
 
 Points _$PointsFromJson(Map<String, dynamic> json) => Points(
       properties:
-          Properties.fromJson(json['properties'] as Map<String, dynamic>),
+          PointsProperties.fromJson(json['properties'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$PointsToJson(Points instance) => <String, dynamic>{
       'properties': instance.properties,
     };
 
-Properties _$PropertiesFromJson(Map<String, dynamic> json) => Properties(
+PointsProperties _$PointsPropertiesFromJson(Map<String, dynamic> json) =>
+    PointsProperties(
       gridId: json['gridId'] as String,
       gridX: json['gridX'] as int,
       gridY: json['gridY'] as int,
@@ -23,7 +24,7 @@ Properties _$PropertiesFromJson(Map<String, dynamic> json) => Properties(
           json['relativeLocation'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$PropertiesToJson(Properties instance) =>
+Map<String, dynamic> _$PointsPropertiesToJson(PointsProperties instance) =>
     <String, dynamic>{
       'gridId': instance.gridId,
       'gridX': instance.gridX,

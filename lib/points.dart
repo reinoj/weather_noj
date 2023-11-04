@@ -5,9 +5,19 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'points.g.dart';
 
+Future<Points> fetchPoints(double lat, double lon) async {
+  final response =
+      await http.get(Uri.parse('https://api.weather.gov/points/$lat,$lon'));
+  if (response.statusCode == 200) {
+    return Points.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+  } else {
+    throw Exception('Failed to get Points');
+  }
+}
+
 @JsonSerializable()
 class Points {
-  final Properties properties;
+  final PointsProperties properties;
 
   Points({
     required this.properties,
@@ -24,22 +34,22 @@ class Points {
 }
 
 @JsonSerializable()
-class Properties {
+class PointsProperties {
   final String gridId;
   final int gridX, gridY;
   final RelativeLocation relativeLocation;
 
-  Properties({
+  PointsProperties({
     required this.gridId,
     required this.gridX,
     required this.gridY,
     required this.relativeLocation,
   });
 
-  factory Properties.fromJson(Map<String, dynamic> json) =>
-      _$PropertiesFromJson(json);
+  factory PointsProperties.fromJson(Map<String, dynamic> json) =>
+      _$PointsPropertiesFromJson(json);
 
-  Map<String, dynamic> toJson() => _$PropertiesToJson(this);
+  Map<String, dynamic> toJson() => _$PointsPropertiesToJson(this);
 }
 
 @JsonSerializable()
@@ -70,14 +80,4 @@ class RLProperties {
       _$RLPropertiesFromJson(json);
 
   Map<String, dynamic> toJson() => _$RLPropertiesToJson(this);
-}
-
-Future<Points> fetchPoints(double lat, double lon) async {
-  final response =
-      await http.get(Uri.parse('https://api.weather.gov/points/$lat,$lon'));
-  if (response.statusCode == 200) {
-    return Points.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
-  } else {
-    throw Exception('Failed to get Points');
-  }
 }
