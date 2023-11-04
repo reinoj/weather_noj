@@ -86,7 +86,9 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
-      body: WeatherInfo(databaseHelper: databaseHelper),
+      body: SingleChildScrollView(
+        child: WeatherInfo(databaseHelper: databaseHelper),
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -162,13 +164,16 @@ class _WeatherInfoState extends State<WeatherInfo> {
   ];
 
   Future<void> dbSnackbar() async {
-    final result = await widget.databaseHelper.getCityInfos();
+    final List<CityInfo> result = await widget.databaseHelper.getCityInfos();
 
     if (!mounted) return;
 
     final SnackBar snackBar = SnackBar(
-      content: Text('${result.length}'),
-    );
+        content: Column(
+      children: [
+        for (int i = 0; i < result.length; i++) Text(result[i].toString())
+      ],
+    ));
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 

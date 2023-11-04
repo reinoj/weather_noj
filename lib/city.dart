@@ -50,6 +50,11 @@ class CityInfo {
         gridX = res['GridX'],
         gridY = res['GridY'],
         time = res['Time'];
+
+  @override
+  String toString() {
+    return '$city, $state:\n$gridId - $gridX, $gridY\n$latitude, $longitude\ntime: $time';
+  }
 }
 
 class CityInfoCompanion {
