@@ -17,6 +17,7 @@ Map<String, dynamic> _$ForecastToJson(Forecast instance) => <String, dynamic>{
 
 ForecastProperties _$ForecastPropertiesFromJson(Map<String, dynamic> json) =>
     ForecastProperties(
+      updated: json['updated'] as String,
       periods: (json['periods'] as List<dynamic>)
           .map((e) => ForecastPeriod.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -24,12 +25,12 @@ ForecastProperties _$ForecastPropertiesFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ForecastPropertiesToJson(ForecastProperties instance) =>
     <String, dynamic>{
+      'updated': instance.updated,
       'periods': instance.periods,
     };
 
 ForecastPeriod _$ForecastPeriodFromJson(Map<String, dynamic> json) =>
     ForecastPeriod(
-      startTime: json['startTime'] as String,
       endTime: json['endTime'] as String,
       temperature: json['temperature'] as int,
       probabilityofPrecipitation: UnitValue.fromJson(
@@ -42,7 +43,6 @@ ForecastPeriod _$ForecastPeriodFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ForecastPeriodToJson(ForecastPeriod instance) =>
     <String, dynamic>{
-      'startTime': instance.startTime,
       'endTime': instance.endTime,
       'temperature': instance.temperature,
       'probabilityofPrecipitation': instance.probabilityofPrecipitation,
@@ -52,7 +52,7 @@ Map<String, dynamic> _$ForecastPeriodToJson(ForecastPeriod instance) =>
     };
 
 UnitValue _$UnitValueFromJson(Map<String, dynamic> json) => UnitValue(
-      value: json['value'] as int,
+      value: json['value'] as int?,
     );
 
 Map<String, dynamic> _$UnitValueToJson(UnitValue instance) => <String, dynamic>{

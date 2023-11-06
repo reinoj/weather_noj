@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:weather_noj/city.dart';
 import 'package:weather_noj/database.dart';
 import 'package:weather_noj/points.dart';
@@ -46,14 +47,23 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late DatabaseHelper databaseHelper;
+  late SharedPreferences prefs;
+  int? currentCity;
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
     databaseHelper = DatabaseHelper();
     databaseHelper.initDB().whenComplete(() async {
       setState(() {});
     });
+
+    prefs = await SharedPreferences.getInstance();
+    currentCity = prefs.getInt('currentCity');
+    if (currentCity == null) {
+      prefs.setInt('currentCity', 0);
+      currentCity = prefs.getInt('currentCity');
+    }
   }
 
   Future<void> newCityNavigate(BuildContext context) async {

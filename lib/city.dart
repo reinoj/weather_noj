@@ -100,3 +100,60 @@ class CityInfoCompanion {
         gridY = res['GridY'],
         time = res['Time'];
 }
+
+class CityForecast {
+  final int id;
+  final int temperature;
+  final int probOfPrecipitation;
+  final int humidity;
+  final int windSpeed;
+  final String windDirection;
+  final String dailyForecast;
+  final String hourlyForecast;
+  final int endTime;
+  final int updateTime;
+  final int checkedTime;
+
+  CityForecast({
+    required this.id,
+    required this.temperature,
+    required this.probOfPrecipitation,
+    required this.humidity,
+    required this.windSpeed,
+    required this.windDirection,
+    required this.dailyForecast,
+    required this.hourlyForecast,
+    required this.endTime,
+    required this.updateTime,
+    required this.checkedTime,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'Id': id,
+      'Temperature': temperature,
+      'ProbOfPrecipitation': probOfPrecipitation,
+      'Humidity': humidity,
+      'WindSpeed': windSpeed,
+      'WindDirection': windDirection,
+      'DailyForecast': dailyForecast,
+      'HourlyForecast': hourlyForecast,
+      'EndTime': endTime,
+      'UpdateTime': updateTime,
+      'CheckedTime': checkedTime,
+    };
+  }
+
+  CityForecast.fromMap(Map<String, dynamic> res)
+      : id = res['Id'],
+        temperature = res['Temperature'],
+        probOfPrecipitation = res['ProbOfPrecipitation'],
+        humidity = res['Humidity'],
+        windSpeed = res['WindSpeed'],
+        windDirection = res['WindDirection'],
+        dailyForecast = res['DailyForecast'],
+        hourlyForecast = res['HourlyForecast'],
+        endTime = res['EndTime'],
+        updateTime = res['UpdateTime'],
+        checkedTime = res['CheckedTime'];
+}

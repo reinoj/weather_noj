@@ -29,7 +29,22 @@ CREATE TABLE CityInfo (
   Time INTEGER NOT NULL
 )
       ''');
-    }, version: 1);
+      db.execute('''
+CREATE TABLE CityForecast (
+  Id INTEGER PRIMARY KEY,
+  Temperature INTEGER NOT NULL,
+  ProbOfPrecipitation INTEGER NOT NULL,
+  Humidity INTEGER NOT NULL,
+  WindSpeed INTEGER NOT NULL,
+  WindDirection TEXT NOT NULL,
+  DailyForecast TEXT NOT NULL,
+  HourlyForecast TEXT NOT NULL,
+  EndTime INTEGER NOT NULL,
+  UpdateTime INTEGER NOT NULL,
+  CheckedTime INTEGER NOT NULL
+)
+      ''');
+    }, version: 2);
   }
 
   Future<int> insertCityInfo(CityInfoCompanion cityInfoCompanion) async {
@@ -49,5 +64,5 @@ CREATE TABLE CityInfo (
     return List.generate(maps.length, (i) => CityInfo.fromMap(maps[i]));
   }
 
-  Future<CityInfo> getCityInfo() async {}
+  // Future<CityInfo> getCityInfo() async {}
 }
