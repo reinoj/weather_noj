@@ -48,21 +48,45 @@ CREATE TABLE CityForecast (
   }
 
   Future<int> insertCityInfo(CityInfoCompanion cityInfoCompanion) async {
-    int result = await db.insert('CityInfo', cityInfoCompanion.toMap());
+    int result = await db.insert(
+      'CityInfo',
+      cityInfoCompanion.toMap(),
+    );
     return result;
   }
 
   Future<int> updateCityInfo(CityInfo cityInfo) async {
-    int result = await db.update('CityInfo', cityInfo.toMap(),
-        where: 'Id = ?', whereArgs: [cityInfo.id]);
+    int result = await db.update(
+      'CityInfo',
+      cityInfo.toMap(),
+      where: 'Id = ?',
+      whereArgs: [cityInfo.id],
+    );
     return result;
   }
 
   Future<List<CityInfo>> getCityInfos() async {
     final List<Map<String, dynamic>> maps = await db.query('CityInfo');
 
-    return List.generate(maps.length, (i) => CityInfo.fromMap(maps[i]));
+    return List.generate(
+      maps.length,
+      (i) => CityInfo.fromMap(maps[i]),
+    );
   }
 
-  // Future<CityInfo> getCityInfo() async {}
+  Future<CityInfo?> getCityInfo(int id) async {
+    final List<Map<String, dynamic>> map = await db.query(
+      'CityInfo',
+      where: 'Id = ?',
+      whereArgs: [id],
+    );
+    switch (map.length) {
+      case 0:
+        return null;
+      case 1:
+        return CityInfo.fromMap(map[0]);
+      default:
+        return null;
+    }
+  }
 }

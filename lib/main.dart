@@ -49,6 +49,7 @@ class _HomePageState extends State<HomePage> {
   late DatabaseHelper databaseHelper;
   late SharedPreferences prefs;
   int? currentCity;
+  late List<CityInfo> allCities;
 
   @override
   Future<void> initState() async {
@@ -58,10 +59,13 @@ class _HomePageState extends State<HomePage> {
       setState(() {});
     });
 
+    updateAllCities();
+    int numCities = allCities.length;
+
     prefs = await SharedPreferences.getInstance();
     currentCity = prefs.getInt('currentCity');
     if (currentCity == null) {
-      prefs.setInt('currentCity', 0);
+      prefs.setInt('currentCity', numCities - 1);
       currentCity = prefs.getInt('currentCity');
     }
   }
@@ -87,8 +91,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> updateAllCities() async {
+    List<CityInfo> updatedCities = await databaseHelper.getCityInfos();
+    setState(() {
+      allCities = updatedCities;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    updateAllCities();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -97,19 +109,24 @@ class _HomePageState extends State<HomePage> {
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
       body: SingleChildScrollView(
-        child: WeatherInfo(databaseHelper: databaseHelper),
+        child: WeatherInfo(
+          databaseHelper: databaseHelper,
+          currentCity: currentCity!,
+        ),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(child: Text('Menu')),
-            ListTile(
-              title: Text('Home'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
+            for (int i = 0; i < allCities.length; i++)
+              ListTile(
+                title: Text('${allCities[i].city}, ${allCities[i].state}'),
+                onTap: () {
+                  Navigator.pop(context);
+                  currentCity = allCities[i].id;
+                },
+              ),
             ListTile(
               title: Text('Add New City'),
               onTap: () {
@@ -125,9 +142,11 @@ class _HomePageState extends State<HomePage> {
 }
 
 class WeatherInfo extends StatefulWidget {
-  const WeatherInfo({super.key, required this.databaseHelper});
+  const WeatherInfo(
+      {super.key, required this.databaseHelper, required this.currentCity});
 
   final DatabaseHelper databaseHelper;
+  final int currentCity;
 
   @override
   State<WeatherInfo> createState() => _WeatherInfoState();
@@ -187,8 +206,18 @@ class _WeatherInfoState extends State<WeatherInfo> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
+  Future<void> updateWeatherValues() async {
+    CityInfo? city =
+        await widget.databaseHelper.getCityInfo(widget.currentCity);
+    if (city != null) {
+      // access cityforecast db, if not yet populated fetch from api
+      // get current values, check update time compared to current time and update if it's been long enough
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    updateWeatherValues();
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
