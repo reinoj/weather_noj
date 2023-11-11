@@ -74,7 +74,7 @@ CREATE TABLE CityForecast (
     );
   }
 
-  Future<CityInfo?> getCityInfo(int id) async {
+  Future<(CityInfo?, ExceptionType?)> getCityInfo(int id) async {
     final List<Map<String, dynamic>> map = await db.query(
       'CityInfo',
       where: 'Id = ?',
@@ -82,11 +82,17 @@ CREATE TABLE CityForecast (
     );
     switch (map.length) {
       case 0:
-        return null;
+        return (null, ExceptionType.cityInfoEmpty);
       case 1:
-        return CityInfo.fromMap(map[0]);
+        return (CityInfo.fromMap(map[0]), null);
       default:
-        return null;
+        return (null, ExceptionType.nonUniqueId);
     }
   }
+}
+
+enum ExceptionType {
+  cityInfoEmpty,
+  nonUniqueId,
+  non200Response,
 }

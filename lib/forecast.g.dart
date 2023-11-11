@@ -6,12 +6,13 @@ part of 'forecast.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Forecast _$ForecastFromJson(Map<String, dynamic> json) => Forecast(
+ForecastInfo _$ForecastFromJson(Map<String, dynamic> json) => ForecastInfo(
       properties: ForecastProperties.fromJson(
           json['properties'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$ForecastToJson(Forecast instance) => <String, dynamic>{
+Map<String, dynamic> _$ForecastToJson(ForecastInfo instance) =>
+    <String, dynamic>{
       'properties': instance.properties,
     };
 

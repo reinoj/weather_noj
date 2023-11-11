@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:weather_noj/city.dart';
 import 'package:weather_noj/database.dart';
+import 'package:weather_noj/forecast.dart';
 import 'package:weather_noj/points.dart';
 
 void main() {
@@ -207,12 +208,10 @@ class _WeatherInfoState extends State<WeatherInfo> {
   }
 
   Future<void> updateWeatherValues() async {
-    CityInfo? city =
-        await widget.databaseHelper.getCityInfo(widget.currentCity);
-    if (city != null) {
-      // access cityforecast db, if not yet populated fetch from api
-      // get current values, check update time compared to current time and update if it's been long enough
-    }
+    ForecastInfo? forecast;
+    ExceptionType? et;
+    (forecast, et) =
+        await fetchForecast(widget.databaseHelper, widget.currentCity);
   }
 
   @override
