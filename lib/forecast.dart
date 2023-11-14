@@ -7,30 +7,35 @@ import 'package:weather_noj/database.dart';
 
 part 'forecast.g.dart';
 
-Future<(ForecastInfo?, ExceptionType?)> fetchForecast(
+Future<ExceptionType?> fetchForecast(
     DatabaseHelper databaseHelper, int id) async {
   CityInfo? cityInfo;
   ExceptionType? et;
+  ForecastInfo? forecastInfo;
   (cityInfo, et) = await databaseHelper.getCityInfo(id);
   if (cityInfo != null) {
-    final response = await http.get(
-      Uri.parse(
-        'https://api.weather.gov/gridpoints/${cityInfo.gridId}/${cityInfo.gridX},${cityInfo.gridY}/forecast',
-      ),
-    );
-    if (response.statusCode == 200) {
-      return (
-        ForecastInfo.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>,
-        ),
-        null
-      );
-    } else {
-      // could change this to returning some type of error
-      return (null, ExceptionType.non200Response);
-    }
+    (forecastInfo, et) = await fetchForecastWeek(cityInfo);
+    if (forecastInfo != null) {}
   } else {
-    return (null, et);
+    return et;
+  }
+}
+
+Future<(ForecastInfo?, ExceptionType?)> fetchForecastWeek(
+    CityInfo cityInfo) async {
+  final response = await http.get(
+    Uri.parse(
+      'https://api.weather.gov/gridpoints/${cityInfo.gridId}/${cityInfo.gridX},${cityInfo.gridY}/forecast',
+    ),
+  );
+  if (response.statusCode == 200) {
+    return (
+      ForecastInfo.fromJson(jsonDecode(response.body) as Map<String, dynamic>),
+      null
+    );
+  } else {
+    // could change this to returning some type of error
+    return (null, ExceptionType.non200Response);
   }
 }
 

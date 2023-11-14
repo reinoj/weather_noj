@@ -199,19 +199,26 @@ class _WeatherInfoState extends State<WeatherInfo> {
     if (!mounted) return;
 
     final SnackBar snackBar = SnackBar(
-        content: Column(
-      children: [
-        for (int i = 0; i < result.length; i++) Text(result[i].toString())
-      ],
-    ));
+      content: Column(
+        children: [
+          for (int i = 0; i < result.length; i++) Text(result[i].toString()),
+        ],
+      ),
+    );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   Future<void> updateWeatherValues() async {
     ForecastInfo? forecast;
     ExceptionType? et;
-    (forecast, et) =
-        await fetchForecast(widget.databaseHelper, widget.currentCity);
+    // (forecast, et) =
+    et = await fetchForecast(widget.databaseHelper, widget.currentCity);
+    if (forecast != null) {
+    } else {
+      final SnackBar snackBar =
+          SnackBar(content: Text('Error: ${et.toString()}'));
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }
   }
 
   @override

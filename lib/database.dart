@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:weather_noj/city.dart';
+import 'package:weather_noj/forecast.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _databaseHelper = DatabaseHelper._();
@@ -89,10 +90,51 @@ CREATE TABLE CityForecast (
         return (null, ExceptionType.nonUniqueId);
     }
   }
+
+  Future<int> insertCityForecast(
+    int id,
+    ForecastInfo forecastWeek,
+    ForecastInfo forecastHourly,
+  ) async {
+    int result = await db.insert(
+      'CityForecast',
+      CityForecast(
+        id: id,
+        temperature: temperature,
+        probOfPrecipitation: probOfPrecipitation,
+        humidity: humidity,
+        windSpeed: windSpeed,
+        windDirection: windDirection,
+        dailyForecast: dailyForecast,
+        hourlyForecast: hourlyForecast,
+        endTime: endTime,
+        updateTime: updateTime,
+        checkedTime: checkedTime,
+      ).toMap(),
+    );
+    return result;
+  }
+
+  Future<(CityForecast?, ExceptionType?)> getCityForecast(int id) async {
+    final List<Map<String, dynamic>> map = await db.query(
+      'CityForecast',
+      where: 'Id = ?',
+      whereArgs: [id],
+    );
+    switch (map.length) {
+      case 0:
+        return (null, ExceptionType.cityForecastEmpty);
+      case 1:
+        return (CityForecast.fromMap(map[0]), null);
+      default:
+        return (null, ExceptionType.nonUniqueId);
+    }
+  }
 }
 
 enum ExceptionType {
   cityInfoEmpty,
+  cityForecastEmpty,
   nonUniqueId,
   non200Response,
 }
