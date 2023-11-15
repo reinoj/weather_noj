@@ -7,17 +7,27 @@ import 'package:weather_noj/database.dart';
 
 part 'forecast.g.dart';
 
-Future<ExceptionType?> fetchForecast(
+Future<((ForecastInfo, ForecastInfo)?, ExceptionType?)> fetchForecast(
     DatabaseHelper databaseHelper, int id) async {
   CityInfo? cityInfo;
   ExceptionType? et;
-  ForecastInfo? forecastInfo;
+  ForecastInfo? forecastWeek;
+  ForecastInfo? forecastHourly;
   (cityInfo, et) = await databaseHelper.getCityInfo(id);
   if (cityInfo != null) {
-    (forecastInfo, et) = await fetchForecastWeek(cityInfo);
-    if (forecastInfo != null) {}
+    (forecastWeek, et) = await fetchForecastWeek(cityInfo);
+    if (forecastWeek != null) {
+      (forecastHourly, et) = await fetchForecastHourly(cityInfo);
+      if (forecastHourly != null) {
+        return ((forecastWeek, forecastHourly), null);
+      } else {
+        return (null, et);
+      }
+    } else {
+      return (null, et);
+    }
   } else {
-    return et;
+    return (null, et);
   }
 }
 
@@ -26,6 +36,24 @@ Future<(ForecastInfo?, ExceptionType?)> fetchForecastWeek(
   final response = await http.get(
     Uri.parse(
       'https://api.weather.gov/gridpoints/${cityInfo.gridId}/${cityInfo.gridX},${cityInfo.gridY}/forecast',
+    ),
+  );
+  if (response.statusCode == 200) {
+    return (
+      ForecastInfo.fromJson(jsonDecode(response.body) as Map<String, dynamic>),
+      null
+    );
+  } else {
+    // could change this to returning some type of error
+    return (null, ExceptionType.non200Response);
+  }
+}
+
+Future<(ForecastInfo?, ExceptionType?)> fetchForecastHourly(
+    CityInfo cityInfo) async {
+  final response = await http.get(
+    Uri.parse(
+      'https://api.weather.gov/gridpoints/${cityInfo.gridId}/${cityInfo.gridX},${cityInfo.gridY}/forecast/hourly',
     ),
   );
   if (response.statusCode == 200) {

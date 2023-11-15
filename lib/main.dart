@@ -78,7 +78,7 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
 
     Points points = await fetchPoints(result[0], result[1]);
-    databaseHelper.insertCityInfo(
+    int cityId = await databaseHelper.insertCityInfo(
       CityInfoCompanion(
         city: points.properties.relativeLocation.properties.city,
         state: points.properties.relativeLocation.properties.state,
@@ -90,6 +90,17 @@ class _HomePageState extends State<HomePage> {
         time: DateTime.now().millisecondsSinceEpoch,
       ),
     );
+    ExceptionType? et;
+    (ForecastInfo, ForecastInfo)? forecasts;
+    (forecasts, et) = await fetchForecast(databaseHelper, cityId);
+    if (forecasts != null) {
+      int forecastCityId = await databaseHelper.insertCityForecast(
+        cityId,
+        forecasts.$1,
+        forecasts.$2,
+      );
+      print('$cityId :: $forecastCityId');
+    }
   }
 
   Future<void> updateAllCities() async {
@@ -209,11 +220,16 @@ class _WeatherInfoState extends State<WeatherInfo> {
   }
 
   Future<void> updateWeatherValues() async {
-    ForecastInfo? forecast;
+    (ForecastInfo, ForecastInfo)? forecasts;
     ExceptionType? et;
-    // (forecast, et) =
-    et = await fetchForecast(widget.databaseHelper, widget.currentCity);
-    if (forecast != null) {
+    (forecasts, et) =
+        await fetchForecast(widget.databaseHelper, widget.currentCity);
+    if (forecasts != null) {
+      int cityId = await widget.databaseHelper.updateCityForecast(
+        widget.currentCity,
+        forecasts.$1,
+        forecasts.$2,
+      );
     } else {
       final SnackBar snackBar =
           SnackBar(content: Text('Error: ${et.toString()}'));

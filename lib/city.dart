@@ -8,11 +8,6 @@ class CityInfo {
   final int gridX;
   final int gridY;
   final int time;
-  // final int current;
-  // final List<List<int>> forecast;
-  // final List<int> hourly;
-  // final int infoTime;
-  // final int weatherTime;
 
   CityInfo({
     required this.id,
@@ -106,7 +101,7 @@ class CityForecast {
   final int temperature;
   final int probOfPrecipitation;
   final int humidity;
-  final int windSpeed;
+  final String windSpeed;
   final String windDirection;
   final String dailyForecast;
   final String hourlyForecast;
