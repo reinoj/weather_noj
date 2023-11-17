@@ -91,33 +91,6 @@ CREATE TABLE CityForecast (
     }
   }
 
-  CityForecast forecastsToCityForecast(
-    int id,
-    ForecastInfo forecastWeek,
-    ForecastInfo forecastHourly,
-  ) {
-    return CityForecast(
-      id: id,
-      temperature: forecastWeek.properties.periods[0].temperature,
-      probOfPrecipitation:
-          forecastWeek.properties.periods[0].probabilityofPrecipitation.value!,
-      humidity: forecastWeek.properties.periods[0].relativeHumidity.value!,
-      windSpeed: forecastWeek.properties.periods[0].windSpeed,
-      windDirection: forecastWeek.properties.periods[0].windDirection,
-      dailyForecast:
-          forecastWeek.properties.periods.map((e) => e.toJson()).toString(),
-      hourlyForecast: forecastHourly.properties.periods
-          .sublist(0, 24)
-          .map((e) => e.toJson())
-          .toString(),
-      endTime: DateTime.parse(forecastWeek.properties.periods[0].endTime)
-          .millisecondsSinceEpoch,
-      updateTime: DateTime.parse(forecastWeek.properties.updated)
-          .millisecondsSinceEpoch,
-      checkedTime: DateTime.now().millisecondsSinceEpoch,
-    );
-  }
-
   Future<int> insertCityForecast(
     int id,
     ForecastInfo forecastWeek,
@@ -154,30 +127,88 @@ CREATE TABLE CityForecast (
       case 0:
         return (null, ExceptionType.cityForecastEmpty);
       case 1:
-        CityForecast cityForecast = CityForecast.fromMap(map[0]);
-        int currentTime = DateTime.now().millisecondsSinceEpoch;
-        // 300,000 ms = 5 min, 900,000 ms = 15 min
-        if (currentTime - cityForecast.updateTime > 900000 ||
-            currentTime - cityForecast.checkedTime > 300000) {
-          (ForecastInfo, ForecastInfo)? forecasts;
-          ExceptionType? et;
-          (forecasts, et) = await fetchForecast(_databaseHelper, id);
-          if (forecasts != null) {
-            int cityId =
-                await updateCityForecast(id, forecasts.$1, forecasts.$2);
-            print(cityId);
-            return (
-              forecastsToCityForecast(id, forecasts.$1, forecasts.$2),
-              null
-            );
+        return (CityForecast.fromMap(map[0]), null);
+
+      default:
+        return (null, ExceptionType.nonUniqueId);
+    }
+  }
+
+  Future<(CityForecast?, ExceptionType?)> checkCityForecast(int id) async {
+    ExceptionType? et;
+    CityForecast? cityForecast;
+    (cityForecast, et) = await getCityForecast(id);
+    if (cityForecast != null) {
+      int currentTime = DateTime.now().millisecondsSinceEpoch;
+      // 900,000 ms = 15 min
+      if (currentTime - cityForecast.updateTime > 900000) {
+        CityForecast? newCityForecast;
+        (newCityForecast, et) = await fetchAndInsertOrUpdate(id, true);
+        if (newCityForecast != null) {
+          return (newCityForecast, null);
+        } else {
+          return (null, et);
+        }
+      } else {
+        return (cityForecast, null);
+      }
+    } else {
+      switch (et) {
+        case ExceptionType.cityForecastEmpty:
+          CityForecast? newCityForecast;
+          (newCityForecast, et) = await fetchAndInsertOrUpdate(id, false);
+          if (newCityForecast != null) {
+            return (newCityForecast, null);
           } else {
             return (null, et);
           }
-        } else {
-          return (cityForecast, null);
-        }
-      default:
-        return (null, ExceptionType.nonUniqueId);
+
+        default:
+          return (null, et);
+      }
+    }
+  }
+
+  CityForecast forecastsToCityForecast(
+    int id,
+    ForecastInfo forecastWeek,
+    ForecastInfo forecastHourly,
+  ) {
+    return CityForecast(
+      id: id,
+      temperature: forecastWeek.properties.periods[0].temperature,
+      probOfPrecipitation:
+          forecastWeek.properties.periods[0].probabilityofPrecipitation.value!,
+      humidity: forecastWeek.properties.periods[0].relativeHumidity.value!,
+      windSpeed: forecastWeek.properties.periods[0].windSpeed,
+      windDirection: forecastWeek.properties.periods[0].windDirection,
+      dailyForecast:
+          forecastWeek.properties.periods.map((e) => e.toJson()).toString(),
+      hourlyForecast: forecastHourly.properties.periods
+          .sublist(0, 24)
+          .map((e) => e.toJson())
+          .toString(),
+      endTime: DateTime.parse(forecastWeek.properties.periods[0].endTime)
+          .millisecondsSinceEpoch,
+      updateTime: DateTime.parse(forecastWeek.properties.updated)
+          .millisecondsSinceEpoch,
+    );
+  }
+
+  Future<(CityForecast?, ExceptionType?)> fetchAndInsertOrUpdate(
+      id, bool insertOrUpdate) async {
+    (ForecastInfo, ForecastInfo)? forecasts;
+    ExceptionType? et;
+    (forecasts, et) = await fetchForecast(_databaseHelper, id);
+    if (forecasts != null) {
+      if (insertOrUpdate) {
+        int _ = await updateCityForecast(id, forecasts.$1, forecasts.$2);
+      } else {
+        int _ = await insertCityForecast(id, forecasts.$1, forecasts.$2);
+      }
+      return (forecastsToCityForecast(id, forecasts.$1, forecasts.$2), null);
+    } else {
+      return (null, et);
     }
   }
 }

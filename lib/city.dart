@@ -107,7 +107,6 @@ class CityForecast {
   final String hourlyForecast;
   final int endTime;
   final int updateTime;
-  final int checkedTime;
 
   CityForecast({
     required this.id,
@@ -120,7 +119,6 @@ class CityForecast {
     required this.hourlyForecast,
     required this.endTime,
     required this.updateTime,
-    required this.checkedTime,
   });
 
   Map<String, dynamic> toMap() {
@@ -135,7 +133,6 @@ class CityForecast {
       'HourlyForecast': hourlyForecast,
       'EndTime': endTime,
       'UpdateTime': updateTime,
-      'CheckedTime': checkedTime,
     };
   }
 
@@ -149,6 +146,5 @@ class CityForecast {
         dailyForecast = res['DailyForecast'],
         hourlyForecast = res['HourlyForecast'],
         endTime = res['EndTime'],
-        updateTime = res['UpdateTime'],
-        checkedTime = res['CheckedTime'];
+        updateTime = res['UpdateTime'];
 }

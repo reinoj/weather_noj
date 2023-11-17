@@ -1,6 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:weather_noj/city.dart';
 import 'package:weather_noj/database.dart';
 import 'package:weather_noj/forecast.dart';
@@ -93,6 +94,9 @@ class _HomePageState extends State<HomePage> {
     ExceptionType? et;
     (ForecastInfo, ForecastInfo)? forecasts;
     (forecasts, et) = await fetchForecast(databaseHelper, cityId);
+
+    if (!mounted) return;
+
     if (forecasts != null) {
       int forecastCityId = await databaseHelper.insertCityForecast(
         cityId,
@@ -100,6 +104,10 @@ class _HomePageState extends State<HomePage> {
         forecasts.$2,
       );
       print('$cityId :: $forecastCityId');
+    } else {
+      final SnackBar snackBar =
+          SnackBar(content: Text('Error: ${et.toString()}'));
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
   }
 
@@ -165,44 +173,35 @@ class WeatherInfo extends StatefulWidget {
 }
 
 class _WeatherInfoState extends State<WeatherInfo> {
-  final int _currentTemp = 0;
+  late int _currentTemp;
+  late List<List<int>> _forecast;
+  late List<int> _hourly;
 
-  final List<List<int>> _forecast = [
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 4],
-    [4, 5],
-    [5, 6],
-    [6, 7],
-  ];
+  @override
+  Future<void> initState() async {
+    super.initState();
 
-  final List<int> _hourly = [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19,
-    20,
-    21,
-    22,
-    23,
-  ];
+    _currentTemp = 0;
+    _forecast = List<List<int>>.filled(7, List<int>.filled(2, 0));
+    _hourly = List<int>.filled(24, 0);
+
+    CityForecast? cityForecast;
+    ExceptionType? et;
+    (cityForecast, et) =
+        await widget.databaseHelper.getCityForecast(widget.currentCity);
+    if (cityForecast != null) {
+    } else {
+      final SnackBar snackBar =
+          SnackBar(content: Text('Error: ${et.toString()}'));
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }
+  }
+
+  List<List<int>> toTemperatureList(List<ForecastPeriod> forecastPeriods) {
+    for (int i=0; i<forecastPeriods.length; i++) {
+      // group into forecast list
+    }
+  }
 
   Future<void> dbSnackbar() async {
     final List<CityInfo> result = await widget.databaseHelper.getCityInfos();
@@ -220,16 +219,15 @@ class _WeatherInfoState extends State<WeatherInfo> {
   }
 
   Future<void> updateWeatherValues() async {
-    (ForecastInfo, ForecastInfo)? forecasts;
+    CityForecast? cityForecast;
     ExceptionType? et;
-    (forecasts, et) =
-        await fetchForecast(widget.databaseHelper, widget.currentCity);
-    if (forecasts != null) {
-      int cityId = await widget.databaseHelper.updateCityForecast(
-        widget.currentCity,
-        forecasts.$1,
-        forecasts.$2,
-      );
+    (cityForecast, et) =
+        await widget.databaseHelper.getCityForecast(widget.currentCity);
+    if (cityForecast != null) {
+      List<ForecastPeriod> dailyForecast =
+          jsonDecode(cityForecast.dailyForecast)
+              .map((e) => ForecastPeriod.fromJson(e));
+      _forecast = dailyForecast.map((e) => null)
     } else {
       final SnackBar snackBar =
           SnackBar(content: Text('Error: ${et.toString()}'));
