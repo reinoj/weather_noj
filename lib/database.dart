@@ -16,6 +16,7 @@ class DatabaseHelper {
 
   Future<void> initDB() async {
     String path = await getDatabasesPath();
+    print('db path: $path');
     db = await openDatabase(join(path, 'City.db'), onCreate: (db, version) {
       db.execute('''
 CREATE TABLE CityInfo (
@@ -46,6 +47,7 @@ CREATE TABLE CityForecast (
 )
       ''');
     }, version: 2);
+    print('db initialized');
   }
 
   Future<int> insertCityInfo(CityInfoCompanion cityInfoCompanion) async {

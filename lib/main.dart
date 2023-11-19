@@ -53,13 +53,33 @@ class _HomePageState extends State<HomePage> {
   int? currentCity;
   late List<CityInfo> allCities;
 
+  // just initialize every
   @override
-  Future<void> initState() async {
+  initState() {
+    print('initState');
     super.initState();
+    // this isn't working
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) async {
+        databaseHelper = DatabaseHelper();
+        await databaseHelper.initDB();
+
+        updateAllCities();
+        int numCities = allCities.length;
+
+        prefs = await SharedPreferences.getInstance();
+        currentCity = prefs.getInt('currentCity');
+        if (currentCity == null) {
+          prefs.setInt('currentCity', numCities - 1);
+          currentCity = prefs.getInt('currentCity');
+        }
+      },
+    );
+  }
+
+  Future<void> initHelper() async {
     databaseHelper = DatabaseHelper();
-    databaseHelper.initDB().whenComplete(() async {
-      setState(() {});
-    });
+    await databaseHelper.initDB();
 
     updateAllCities();
     int numCities = allCities.length;
@@ -120,7 +140,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    updateAllCities();
+    //updateAllCities();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -197,9 +217,10 @@ class _WeatherInfoState extends State<WeatherInfo> {
     }
   }
 
-  List<List<int>> toTemperatureList(List<ForecastPeriod> forecastPeriods) {
-    for (int i=0; i<forecastPeriods.length; i++) {
+  void toTemperatureList(List<ForecastPeriod> forecastPeriods) {
+    for (int i = 0; i < forecastPeriods.length; i++) {
       // group into forecast list
+      _forecast[(i / 2).floor()][i % 2] = forecastPeriods[i].temperature;
     }
   }
 
@@ -224,13 +245,19 @@ class _WeatherInfoState extends State<WeatherInfo> {
     (cityForecast, et) =
         await widget.databaseHelper.getCityForecast(widget.currentCity);
     if (cityForecast != null) {
-      List<ForecastPeriod> dailyForecast =
-          jsonDecode(cityForecast.dailyForecast)
-              .map((e) => ForecastPeriod.fromJson(e));
-      _forecast = dailyForecast.map((e) => null)
+      setState(() {
+        _currentTemp = cityForecast!.temperature;
+        List<ForecastPeriod> dailyForecast =
+            jsonDecode(cityForecast.dailyForecast)
+                .map((e) => ForecastPeriod.fromJson(e));
+        toTemperatureList(dailyForecast);
+        _hourly = jsonDecode(cityForecast.hourlyForecast)
+            .map((e) => ForecastPeriod.fromJson(e));
+      });
     } else {
-      final SnackBar snackBar =
-          SnackBar(content: Text('Error: ${et.toString()}'));
+      final SnackBar snackBar = SnackBar(
+        content: Text('Error: ${et.toString()}'),
+      );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
   }
