@@ -48,48 +48,42 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late DatabaseHelper databaseHelper;
-  late SharedPreferences prefs;
+  DatabaseHelper? databaseHelper;
+  SharedPreferences? prefs;
   int? currentCity;
-  late List<CityInfo> allCities;
+  List<CityInfo>? allCities;
 
-  // just initialize every
   @override
   initState() {
-    print('initState');
     super.initState();
-    // this isn't working
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) async {
-        databaseHelper = DatabaseHelper();
-        await databaseHelper.initDB();
+    initHelper();
+  }
 
-        updateAllCities();
-        int numCities = allCities.length;
-
-        prefs = await SharedPreferences.getInstance();
-        currentCity = prefs.getInt('currentCity');
-        if (currentCity == null) {
-          prefs.setInt('currentCity', numCities - 1);
-          currentCity = prefs.getInt('currentCity');
-        }
-      },
-    );
+  Future<SharedPreferences> initPrefs() async {
+    return await SharedPreferences.getInstance();
   }
 
   Future<void> initHelper() async {
     databaseHelper = DatabaseHelper();
-    await databaseHelper.initDB();
+    await databaseHelper!.initDB();
 
-    updateAllCities();
-    int numCities = allCities.length;
+    await updateAllCities();
+    int numCities = allCities!.length;
 
     prefs = await SharedPreferences.getInstance();
-    currentCity = prefs.getInt('currentCity');
+    currentCity = prefs!.getInt('currentCity');
     if (currentCity == null) {
-      prefs.setInt('currentCity', numCities - 1);
-      currentCity = prefs.getInt('currentCity');
+      prefs!.setInt('currentCity', numCities - 1);
+      currentCity = prefs!.getInt('currentCity');
     }
+    setState(() {});
+  }
+
+  bool allInitialized() {
+    return (databaseHelper != null &&
+        prefs != null &&
+        currentCity != null &&
+        allCities != null);
   }
 
   Future<void> newCityNavigate(BuildContext context) async {
@@ -99,7 +93,7 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
 
     Points points = await fetchPoints(result[0], result[1]);
-    int cityId = await databaseHelper.insertCityInfo(
+    int cityId = await databaseHelper!.insertCityInfo(
       CityInfoCompanion(
         city: points.properties.relativeLocation.properties.city,
         state: points.properties.relativeLocation.properties.state,
@@ -113,12 +107,12 @@ class _HomePageState extends State<HomePage> {
     );
     ExceptionType? et;
     (ForecastInfo, ForecastInfo)? forecasts;
-    (forecasts, et) = await fetchForecast(databaseHelper, cityId);
+    (forecasts, et) = await fetchForecast(databaseHelper!, cityId);
 
     if (!mounted) return;
 
     if (forecasts != null) {
-      int forecastCityId = await databaseHelper.insertCityForecast(
+      int forecastCityId = await databaseHelper!.insertCityForecast(
         cityId,
         forecasts.$1,
         forecasts.$2,
@@ -132,52 +126,88 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> updateAllCities() async {
-    List<CityInfo> updatedCities = await databaseHelper.getCityInfos();
+    List<CityInfo> updatedCities = await databaseHelper!.getCityInfos();
     setState(() {
       allCities = updatedCities;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    //updateAllCities();
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        title: Text(widget.title),
-        centerTitle: true,
-      ),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      body: SingleChildScrollView(
-        child: WeatherInfo(
-          databaseHelper: databaseHelper,
-          currentCity: currentCity!,
-        ),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(child: Text('Menu')),
-            for (int i = 0; i < allCities.length; i++)
+  Drawer menuDrawer() {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const DrawerHeader(child: Text('Menu')),
+          if (allCities != null)
+            for (int i = 0; i < allCities!.length; i++)
               ListTile(
-                title: Text('${allCities[i].city}, ${allCities[i].state}'),
+                title: Text('${allCities![i].city}, ${allCities![i].state}'),
                 onTap: () {
                   Navigator.pop(context);
-                  currentCity = allCities[i].id;
+                  currentCity = allCities![i].id;
                 },
               ),
-            ListTile(
-              title: Text('Add New City'),
-              onTap: () {
-                Navigator.pop(context);
-                newCityNavigate(context);
-              },
-            ),
-          ],
-        ),
+          ListTile(
+            title: Text('Add New City'),
+            onTap: () {
+              Navigator.pop(context);
+              newCityNavigate(context);
+            },
+          ),
+        ],
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (allInitialized()) {
+      if (allCities!.isNotEmpty) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            title: Text(widget.title),
+            centerTitle: true,
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          body: SingleChildScrollView(
+            child: WeatherInfo(
+              databaseHelper: databaseHelper!,
+              currentCity: currentCity!,
+            ),
+          ),
+          drawer: menuDrawer(),
+        );
+      } else {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            title: Text(widget.title),
+            centerTitle: true,
+          ),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          body: Text(
+            'No Cities...',
+            textAlign: TextAlign.center,
+          ),
+          drawer: menuDrawer(),
+        );
+      }
+    } else {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          title: Text(widget.title),
+          centerTitle: true,
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        body: Text(
+          'Loading...',
+          textAlign: TextAlign.center,
+        ),
+        drawer: menuDrawer(),
+      );
+    }
   }
 }
 
