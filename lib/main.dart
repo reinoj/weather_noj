@@ -223,50 +223,55 @@ class WeatherInfo extends StatefulWidget {
 }
 
 class _WeatherInfoState extends State<WeatherInfo> {
-  late int _currentTemp;
-  late List<List<int>> _forecast;
-  late List<int> _hourly;
+  int? _currentTemp;
+  List<List<int>>? _forecast;
+  List<int>? _hourly;
 
   @override
-  Future<void> initState() async {
+  initState() {
     super.initState();
 
     _currentTemp = 0;
     _forecast = List<List<int>>.filled(7, List<int>.filled(2, 0));
     _hourly = List<int>.filled(24, 0);
 
-    CityForecast? cityForecast;
-    ExceptionType? et;
-    (cityForecast, et) =
-        await widget.databaseHelper.getCityForecast(widget.currentCity);
-    if (cityForecast != null) {
-    } else {
-      final SnackBar snackBar =
-          SnackBar(content: Text('Error: ${et.toString()}'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-    }
+    updateWeatherValues();
+    setState(() {});
+  }
+
+  bool isInitialized() {
+    return (_currentTemp != null && _forecast != null && _hourly != null);
   }
 
   void toTemperatureList(List<ForecastPeriod> forecastPeriods) {
-    for (int i = 0; i < forecastPeriods.length; i++) {
-      // group into forecast list
-      _forecast[(i / 2).floor()][i % 2] = forecastPeriods[i].temperature;
+    if (_forecast != null) {
+      for (int i = 0; i < forecastPeriods.length; i++) {
+        // group into forecast list
+        _forecast?[(i / 2).floor()][i % 2] = forecastPeriods[i].temperature;
+      }
     }
   }
 
   Future<void> dbSnackbar() async {
-    final List<CityInfo> result = await widget.databaseHelper.getCityInfos();
-
+    // final List<CityInfo> result = await widget.databaseHelper.getCityInfos();
+    CityForecast? cf;
+    ExceptionType? et;
+    (cf, et) = await widget.databaseHelper.getCityForecast(widget.currentCity);
     if (!mounted) return;
 
-    final SnackBar snackBar = SnackBar(
-      content: Column(
-        children: [
-          for (int i = 0; i < result.length; i++) Text(result[i].toString()),
-        ],
-      ),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    if (cf != null) {
+      final SnackBar snackBar = SnackBar(
+        content: Text(cf.toString()),
+        // content: Column(
+        //   children: [
+        //     for (int i = 0; i < result.length; i++) Text(result[i].toString()),
+        //   ],
+        // ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    } else {
+      print(et.toString());
+    }
   }
 
   Future<void> updateWeatherValues() async {
@@ -277,10 +282,12 @@ class _WeatherInfoState extends State<WeatherInfo> {
     if (cityForecast != null) {
       setState(() {
         _currentTemp = cityForecast!.temperature;
-        List<ForecastPeriod> dailyForecast =
-            jsonDecode(cityForecast.dailyForecast)
-                .map((e) => ForecastPeriod.fromJson(e));
-        toTemperatureList(dailyForecast);
+        // List<ForecastPeriod> dailyForecast =
+        //     jsonDecode(cityForecast.dailyForecast)
+        //         .map((e) => ForecastPeriod.fromJson(e));
+        // toTemperatureList(dailyForecast);
+        List<ForecastPeriod> daily = jsonDecode(cityForecast.dailyForecast);
+        toTemperatureList(daily);
         _hourly = jsonDecode(cityForecast.hourlyForecast)
             .map((e) => ForecastPeriod.fromJson(e));
       });
@@ -294,55 +301,60 @@ class _WeatherInfoState extends State<WeatherInfo> {
 
   @override
   Widget build(BuildContext context) {
-    updateWeatherValues();
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
+    if (isInitialized()) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.all(Radius.circular(10.0))),
+                child: CurrentWeather(currentTemp: _currentTemp!),
+              ),
+            ),
+            SizedBox(
+              height: 16,
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.all(Radius.circular(10.0))),
-              child: CurrentWeather(currentTemp: _currentTemp),
-            ),
-          ),
-          SizedBox(
-            height: 16,
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                  borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                ),
+                child: Hourly(hourly: _hourly!),
               ),
-              child: Hourly(hourly: _hourly),
             ),
-          ),
-          SizedBox(
-            height: 16,
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.blueGrey.shade900,
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+            SizedBox(
+              height: 16,
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 0.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey.shade900,
+                  borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                ),
+                child: Forecast(forecast: _forecast!),
               ),
-              child: Forecast(forecast: _forecast),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              dbSnackbar();
-            },
-            child: const Text('db'),
-          ),
-        ],
-      ),
-    );
+            ElevatedButton(
+              onPressed: () {
+                dbSnackbar();
+              },
+              child: const Text('db'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Center(
+        child: Text('Loading'),
+      );
+    }
   }
 }
 

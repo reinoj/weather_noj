@@ -8,7 +8,9 @@ import 'package:weather_noj/database.dart';
 part 'forecast.g.dart';
 
 Future<((ForecastInfo, ForecastInfo)?, ExceptionType?)> fetchForecast(
-    DatabaseHelper databaseHelper, int id) async {
+  DatabaseHelper databaseHelper,
+  int id,
+) async {
   CityInfo? cityInfo;
   ExceptionType? et;
   ForecastInfo? forecastWeek;
