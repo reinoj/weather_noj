@@ -2,16 +2,20 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
+import 'package:weather_noj/exceptions.dart';
 
 part 'points.g.dart';
 
-Future<Points> fetchPoints(double lat, double lon) async {
+Future<(Points?, WeatherException?)> fetchPoints(double lat, double lon) async {
   final response =
       await http.get(Uri.parse('https://api.weather.gov/points/$lat,$lon'));
   if (response.statusCode == 200) {
-    return Points.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return (
+      Points.fromJson(jsonDecode(response.body) as Map<String, dynamic>),
+      null
+    );
   } else {
-    throw Exception('Failed to get Points');
+    return (null, WeatherException.non200Response);
   }
 }
 
