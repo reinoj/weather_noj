@@ -4,18 +4,19 @@ import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:weather_noj/city.dart';
 import 'package:weather_noj/database.dart';
+import 'package:weather_noj/exceptions.dart';
 
 part 'forecast.g.dart';
 
-Future<((ForecastInfo, ForecastInfo)?, ExceptionType?)> fetchForecast(
+Future<((ForecastInfo, ForecastInfo)?, WeatherException?)> fetchForecast(
   DatabaseHelper databaseHelper,
   int id,
 ) async {
   CityInfo? cityInfo;
-  ExceptionType? et;
+  WeatherException? et;
   ForecastInfo? forecastWeek;
   ForecastInfo? forecastHourly;
-  (cityInfo, et) = await databaseHelper.getCityInfo(id);
+  (cityInfo, et) = await databaseHelper.getCityInfoId(id);
   if (cityInfo != null) {
     (forecastWeek, et) = await fetchForecastWeek(cityInfo);
     if (forecastWeek != null) {
@@ -33,7 +34,7 @@ Future<((ForecastInfo, ForecastInfo)?, ExceptionType?)> fetchForecast(
   }
 }
 
-Future<(ForecastInfo?, ExceptionType?)> fetchForecastWeek(
+Future<(ForecastInfo?, WeatherException?)> fetchForecastWeek(
     CityInfo cityInfo) async {
   final response = await http.get(
     Uri.parse(
@@ -47,11 +48,11 @@ Future<(ForecastInfo?, ExceptionType?)> fetchForecastWeek(
     );
   } else {
     // could change this to returning some type of error
-    return (null, ExceptionType.non200Response);
+    return (null, WeatherException.non200Response);
   }
 }
 
-Future<(ForecastInfo?, ExceptionType?)> fetchForecastHourly(
+Future<(ForecastInfo?, WeatherException?)> fetchForecastHourly(
     CityInfo cityInfo) async {
   final response = await http.get(
     Uri.parse(
@@ -65,7 +66,7 @@ Future<(ForecastInfo?, ExceptionType?)> fetchForecastHourly(
     );
   } else {
     // could change this to returning some type of error
-    return (null, ExceptionType.non200Response);
+    return (null, WeatherException.non200Response);
   }
 }
 

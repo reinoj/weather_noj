@@ -1,7 +1,9 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:weather_noj/city.dart';
+import 'package:weather_noj/exceptions.dart';
 import 'package:weather_noj/forecast.dart';
+import 'package:weather_noj/points.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _databaseHelper = DatabaseHelper._();
@@ -49,6 +51,35 @@ CREATE TABLE CityForecast (
     }, version: 2);
   }
 
+  // ----- ----- CityInfo ----- -----
+
+  Future<int> checkCityInfo(Points points, List<double> latLon) async {
+    CityInfo? ci;
+    WeatherException? we;
+    (ci, we) = await getCityInfoPoints(points);
+    if (ci != null) {
+      return ci.id;
+    } else {
+      if (we == WeatherException.nonUniqueId) {
+        return -1;
+      }
+
+      int cityId = await insertCityInfo(
+        CityInfoCompanion(
+          city: points.properties.relativeLocation.properties.city,
+          state: points.properties.relativeLocation.properties.state,
+          latitude: latLon[0],
+          longitude: latLon[1],
+          gridId: points.properties.gridId,
+          gridX: points.properties.gridX,
+          gridY: points.properties.gridY,
+          time: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+      return cityId;
+    }
+  }
+
   Future<int> insertCityInfo(CityInfoCompanion cityInfoCompanion) async {
     int result = await db.insert(
       'CityInfo',
@@ -76,21 +107,44 @@ CREATE TABLE CityForecast (
     );
   }
 
-  Future<(CityInfo?, ExceptionType?)> getCityInfo(int id) async {
+  Future<(CityInfo?, WeatherException?)> getCityInfoPoints(
+      Points points) async {
     final List<Map<String, dynamic>> map = await db.query(
       'CityInfo',
-      where: 'Id = ?',
-      whereArgs: [id],
+      where: 'gridId = ? AND gridX = ? AND gridY = ?',
+      whereArgs: [
+        points.properties.gridId,
+        points.properties.gridX,
+        points.properties.gridY
+      ],
     );
     switch (map.length) {
       case 0:
-        return (null, ExceptionType.cityInfoEmpty);
+        return (null, WeatherException.cityInfoEmpty);
       case 1:
         return (CityInfo.fromMap(map[0]), null);
       default:
-        return (null, ExceptionType.nonUniqueId);
+        return (null, WeatherException.nonUniqueId);
     }
   }
+
+  Future<(CityInfo?, WeatherException?)> getCityInfoId(int cityId) async {
+    final List<Map<String, dynamic>> map = await db.query(
+      'CityInfo',
+      where: 'Id = ?',
+      whereArgs: [cityId],
+    );
+    switch (map.length) {
+      case 0:
+        return (null, WeatherException.cityInfoEmpty);
+      case 1:
+        return (CityInfo.fromMap(map[0]), null);
+      default:
+        return (null, WeatherException.nonUniqueId);
+    }
+  }
+
+  // ----- ----- CityForecast ----- -----
 
   Future<int> insertCityForecast(
     int id,
@@ -118,7 +172,7 @@ CREATE TABLE CityForecast (
     return result;
   }
 
-  Future<(CityForecast?, ExceptionType?)> getCityForecast(int id) async {
+  Future<(CityForecast?, WeatherException?)> getCityForecast(int id) async {
     final List<Map<String, dynamic>> map = await db.query(
       'CityForecast',
       where: 'Id = ?',
@@ -126,17 +180,17 @@ CREATE TABLE CityForecast (
     );
     switch (map.length) {
       case 0:
-        return (null, ExceptionType.cityForecastEmpty);
+        return (null, WeatherException.cityForecastEmpty);
       case 1:
         return (CityForecast.fromMap(map[0]), null);
 
       default:
-        return (null, ExceptionType.nonUniqueId);
+        return (null, WeatherException.nonUniqueId);
     }
   }
 
-  Future<(CityForecast?, ExceptionType?)> checkCityForecast(int id) async {
-    ExceptionType? et;
+  Future<(CityForecast?, WeatherException?)> checkCityForecast(int id) async {
+    WeatherException? et;
     CityForecast? cityForecast;
     (cityForecast, et) = await getCityForecast(id);
     if (cityForecast != null) {
@@ -155,7 +209,7 @@ CREATE TABLE CityForecast (
       }
     } else {
       switch (et) {
-        case ExceptionType.cityForecastEmpty:
+        case WeatherException.cityForecastEmpty:
           CityForecast? newCityForecast;
           (newCityForecast, et) = await fetchAndInsertOrUpdate(id, false);
           if (newCityForecast != null) {
@@ -196,10 +250,10 @@ CREATE TABLE CityForecast (
     );
   }
 
-  Future<(CityForecast?, ExceptionType?)> fetchAndInsertOrUpdate(
+  Future<(CityForecast?, WeatherException?)> fetchAndInsertOrUpdate(
       id, bool insertOrUpdate) async {
     (ForecastInfo, ForecastInfo)? forecasts;
-    ExceptionType? et;
+    WeatherException? et;
     (forecasts, et) = await fetchForecast(_databaseHelper, id);
     if (forecasts != null) {
       if (insertOrUpdate) {
@@ -212,11 +266,4 @@ CREATE TABLE CityForecast (
       return (null, et);
     }
   }
-}
-
-enum ExceptionType {
-  cityInfoEmpty,
-  cityForecastEmpty,
-  nonUniqueId,
-  non200Response,
 }

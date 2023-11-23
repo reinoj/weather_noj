@@ -34,102 +34,110 @@ class MyApp extends StatelessWidget {
             onSurface: Colors.white70),
         useMaterial3: true,
       ),
-      home: HomePage(title: 'WeatherNoj'),
+      home: HomePage(),
     );
   }
 }
 
+// ignore: must_be_immutable
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+  HomePage({super.key});
 
-  final String title;
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
+  final String title = 'WeatherNoj';
   DatabaseHelper? databaseHelper;
   SharedPreferences? prefs;
   int? currentCity;
   List<CityInfo>? allCities;
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
   initState() {
     super.initState();
     initHelper();
   }
 
-  Future<SharedPreferences> initPrefs() async {
-    return await SharedPreferences.getInstance();
-  }
-
   Future<void> initHelper() async {
-    databaseHelper = DatabaseHelper();
-    await databaseHelper!.initDB();
+    widget.databaseHelper = DatabaseHelper();
+    await widget.databaseHelper!.initDB();
 
     await updateAllCities();
-    int numCities = allCities!.length;
+    int numCities = widget.allCities!.length;
 
-    prefs = await SharedPreferences.getInstance();
-    currentCity = prefs!.getInt('currentCity');
-    if (currentCity == null) {
-      prefs!.setInt('currentCity', numCities - 1);
-      currentCity = prefs!.getInt('currentCity');
+    widget.prefs = await SharedPreferences.getInstance();
+    widget.currentCity = widget.prefs!.getInt('currentCity');
+    if (widget.currentCity == null) {
+      widget.prefs!.setInt('currentCity', numCities - 1);
+      widget.currentCity = widget.prefs!.getInt('currentCity');
     }
     setState(() {});
   }
 
   bool allInitialized() {
-    return (databaseHelper != null &&
-        prefs != null &&
-        currentCity != null &&
-        allCities != null);
+    return (widget.databaseHelper != null &&
+        widget.prefs != null &&
+        widget.currentCity != null &&
+        widget.allCities != null);
   }
 
   Future<void> newCityNavigate(BuildContext context) async {
     final List<double> result = await Navigator.push(
-        context, MaterialPageRoute(builder: (context) => const NewCityPage()));
-
-    if (!mounted) return;
-
-    Points points = await fetchPoints(result[0], result[1]);
-    int cityId = await databaseHelper!.insertCityInfo(
-      CityInfoCompanion(
-        city: points.properties.relativeLocation.properties.city,
-        state: points.properties.relativeLocation.properties.state,
-        latitude: result[0],
-        longitude: result[1],
-        gridId: points.properties.gridId,
-        gridX: points.properties.gridX,
-        gridY: points.properties.gridY,
-        time: DateTime.now().millisecondsSinceEpoch,
-      ),
+      context,
+      MaterialPageRoute(builder: (context) => const NewCityPage()),
     );
-    WeatherException? et;
-    (ForecastInfo, ForecastInfo)? forecasts;
-    (forecasts, et) = await fetchForecast(databaseHelper!, cityId);
 
     if (!mounted) return;
 
-    if (forecasts != null) {
-      int forecastCityId = await databaseHelper!.insertCityForecast(
-        cityId,
-        forecasts.$1,
-        forecasts.$2,
-      );
-      print('$cityId :: $forecastCityId');
-    } else {
-      final SnackBar snackBar =
-          SnackBar(content: Text('Error: ${et.toString()}'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    Points? points;
+    WeatherException? we;
+    (points, we) = await fetchPoints(result[0], result[1]);
+    if (points != null) {
+      int cityId = await widget.databaseHelper!.checkCityInfo(points, result);
+
+      if (!mounted) return;
+
+      switch (cityId) {
+        case -1:
+          exceptionSnackBar(
+            context,
+            WeatherException.nonUniqueId,
+            'newCityNavigate',
+          );
+          break;
+        case 0:
+          exceptionSnackBar(
+            context,
+            WeatherException.failedToInsert,
+            'newCityNavigate',
+          );
+        default:
+      }
+
+      (ForecastInfo, ForecastInfo)? forecasts;
+      (forecasts, we) = await fetchForecast(widget.databaseHelper!, cityId);
+
+      if (forecasts != null) {
+        int forecastCityId = await widget.databaseHelper!.insertCityForecast(
+          cityId,
+          forecasts.$1,
+          forecasts.$2,
+        );
+        print('$cityId :: $forecastCityId');
+      } else {
+        if (!mounted) return;
+
+        exceptionSnackBar(context, we!, 'newCityNavigate');
+      }
     }
   }
 
   Future<void> updateAllCities() async {
-    List<CityInfo> updatedCities = await databaseHelper!.getCityInfos();
+    List<CityInfo> updatedCities = await widget.databaseHelper!.getCityInfos();
     setState(() {
-      allCities = updatedCities;
+      widget.allCities = updatedCities;
     });
   }
 
@@ -139,13 +147,14 @@ class _HomePageState extends State<HomePage> {
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(child: Text('Menu')),
-          if (allCities != null)
-            for (int i = 0; i < allCities!.length; i++)
+          if (widget.allCities != null)
+            for (int i = 0; i < widget.allCities!.length; i++)
               ListTile(
-                title: Text('${allCities![i].city}, ${allCities![i].state}'),
+                title: Text(
+                    '${widget.allCities![i].city}, ${widget.allCities![i].state}'),
                 onTap: () {
                   Navigator.pop(context);
-                  currentCity = allCities![i].id;
+                  widget.currentCity = widget.allCities![i].id;
                 },
               ),
           ListTile(
@@ -163,7 +172,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     if (allInitialized()) {
-      if (allCities!.isNotEmpty) {
+      if (widget.allCities!.isNotEmpty) {
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -173,8 +182,8 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: Theme.of(context).colorScheme.primary,
           body: SingleChildScrollView(
             child: WeatherInfo(
-              databaseHelper: databaseHelper!,
-              currentCity: currentCity!,
+              databaseHelper: widget.databaseHelper!,
+              currentCity: widget.currentCity!,
             ),
           ),
           drawer: menuDrawer(),
@@ -256,8 +265,8 @@ class _WeatherInfoState extends State<WeatherInfo> {
   Future<void> dbSnackbar() async {
     // final List<CityInfo> result = await widget.databaseHelper.getCityInfos();
     CityForecast? cf;
-    WeatherException? et;
-    (cf, et) = await widget.databaseHelper.getCityForecast(widget.currentCity);
+    WeatherException? we;
+    (cf, we) = await widget.databaseHelper.getCityForecast(widget.currentCity);
     if (!mounted) return;
 
     if (cf != null) {
@@ -271,14 +280,14 @@ class _WeatherInfoState extends State<WeatherInfo> {
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     } else {
-      print(et.toString());
+      print(we.toString());
     }
   }
 
   Future<void> updateWeatherValues() async {
     CityForecast? cityForecast;
-    WeatherException? et;
-    (cityForecast, et) =
+    WeatherException? we;
+    (cityForecast, we) =
         await widget.databaseHelper.getCityForecast(widget.currentCity);
     if (cityForecast != null) {
       setState(() {
@@ -293,10 +302,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
             .map((e) => ForecastPeriod.fromJson(e));
       });
     } else {
-      final SnackBar snackBar = SnackBar(
-        content: Text('Error: ${et.toString()}'),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      exceptionSnackBar(context, we!, 'updateWeatherValues');
     }
   }
 
