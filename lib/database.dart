@@ -33,6 +33,12 @@ CREATE TABLE CityInfo (
   Time INTEGER NOT NULL
 )
       ''');
+      String dailyString = List.generate(14, (index) => index)
+          .map((e) => 'Day${e ~/ 2}_${e % 2} INTEGER NOT NULL,\n')
+          .join();
+      String hourlyString = List.generate(24, (index) => index)
+          .map((e) => 'Hour$e INTEGER NOT NULL,\n')
+          .join();
       db.execute('''
 CREATE TABLE CityForecast (
   Id INTEGER PRIMARY KEY,
@@ -41,14 +47,14 @@ CREATE TABLE CityForecast (
   Humidity INTEGER NOT NULL,
   WindSpeed INTEGER NOT NULL,
   WindDirection TEXT NOT NULL,
-  DailyForecast TEXT NOT NULL,
-  HourlyForecast TEXT NOT NULL,
+  $dailyString
+  $hourlyString
   EndTime INTEGER NOT NULL,
   UpdateTime INTEGER NOT NULL,
   CheckedTime INTEGER NOT NULL
 )
       ''');
-    }, version: 2);
+    }, version: 3);
   }
 
   // ----- ----- CityInfo ----- -----
@@ -226,26 +232,26 @@ CREATE TABLE CityForecast (
 
   CityForecast forecastsToCityForecast(
     int id,
-    ForecastInfo forecastWeek,
+    ForecastInfo forecastDaily,
     ForecastInfo forecastHourly,
   ) {
     return CityForecast(
       id: id,
-      temperature: forecastWeek.properties.periods[0].temperature,
+      temperature: forecastDaily.properties.periods[0].temperature,
       probOfPrecipitation:
-          forecastWeek.properties.periods[0].probabilityofPrecipitation.value!,
-      humidity: forecastWeek.properties.periods[0].relativeHumidity.value!,
-      windSpeed: forecastWeek.properties.periods[0].windSpeed,
-      windDirection: forecastWeek.properties.periods[0].windDirection,
+          forecastDaily.properties.periods[0].probabilityofPrecipitation.value!,
+      humidity: forecastDaily.properties.periods[0].relativeHumidity.value!,
+      windSpeed: forecastDaily.properties.periods[0].windSpeed,
+      windDirection: forecastDaily.properties.periods[0].windDirection,
       dailyForecast:
-          forecastWeek.properties.periods.map((e) => e.toJson()).toString(),
+          forecastDaily.properties.periods.map((e) => e.temperature).toList(),
       hourlyForecast: forecastHourly.properties.periods
           .sublist(0, 24)
-          .map((e) => e.toJson())
-          .toString(),
-      endTime: DateTime.parse(forecastWeek.properties.periods[0].endTime)
+          .map((e) => e.temperature)
+          .toList(),
+      endTime: DateTime.parse(forecastDaily.properties.periods[0].endTime)
           .millisecondsSinceEpoch,
-      updateTime: DateTime.parse(forecastWeek.properties.updated)
+      updateTime: DateTime.parse(forecastDaily.properties.updated)
           .millisecondsSinceEpoch,
     );
   }

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:weather_noj/city.dart';
@@ -34,102 +32,129 @@ class MyApp extends StatelessWidget {
             onSurface: Colors.white70),
         useMaterial3: true,
       ),
-      home: HomePage(title: 'WeatherNoj'),
+      home: HomePage(),
     );
   }
 }
 
+// ignore: must_be_immutable
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+  HomePage({super.key});
 
-  final String title;
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
+  final String title = 'WeatherNoj';
   DatabaseHelper? databaseHelper;
   SharedPreferences? prefs;
   int? currentCity;
   List<CityInfo>? allCities;
 
   @override
-  initState() {
-    super.initState();
-    initHelper();
-  }
+  State<HomePage> createState() => _HomePageState();
+}
 
-  Future<SharedPreferences> initPrefs() async {
-    return await SharedPreferences.getInstance();
+class _HomePageState extends State<HomePage> {
+  @override
+  initState() {
+    initHelper();
+    super.initState();
   }
 
   Future<void> initHelper() async {
-    databaseHelper = DatabaseHelper();
-    await databaseHelper!.initDB();
+    widget.databaseHelper = DatabaseHelper();
+    await widget.databaseHelper!.initDB();
 
     await updateAllCities();
-    int numCities = allCities!.length;
+    int numCities = widget.allCities!.length;
 
-    prefs = await SharedPreferences.getInstance();
-    currentCity = prefs!.getInt('currentCity');
-    if (currentCity == null) {
-      prefs!.setInt('currentCity', numCities - 1);
-      currentCity = prefs!.getInt('currentCity');
+    widget.prefs = await SharedPreferences.getInstance();
+    widget.currentCity = widget.prefs!.getInt('currentCity');
+    if (widget.currentCity == null) {
+      widget.prefs!.setInt('currentCity', numCities - 1);
+      widget.currentCity = widget.prefs!.getInt('currentCity');
+    } else if (widget.currentCity == -1) {
+      if (numCities > 0) {
+        if (widget.allCities != null) {
+          widget.currentCity = widget.allCities![0].id;
+        } else {
+          if (!mounted) return;
+          exceptionSnackBar(
+            context,
+            'allCities is null, but numCities is non-zero',
+            'initHelper',
+          );
+        }
+      }
     }
     setState(() {});
   }
 
   bool allInitialized() {
-    return (databaseHelper != null &&
-        prefs != null &&
-        currentCity != null &&
-        allCities != null);
+    return (widget.databaseHelper != null &&
+        widget.prefs != null &&
+        widget.currentCity != null &&
+        widget.allCities != null);
   }
 
   Future<void> newCityNavigate(BuildContext context) async {
     final List<double> result = await Navigator.push(
-        context, MaterialPageRoute(builder: (context) => const NewCityPage()));
-
-    if (!mounted) return;
-
-    Points points = await fetchPoints(result[0], result[1]);
-    int cityId = await databaseHelper!.insertCityInfo(
-      CityInfoCompanion(
-        city: points.properties.relativeLocation.properties.city,
-        state: points.properties.relativeLocation.properties.state,
-        latitude: result[0],
-        longitude: result[1],
-        gridId: points.properties.gridId,
-        gridX: points.properties.gridX,
-        gridY: points.properties.gridY,
-        time: DateTime.now().millisecondsSinceEpoch,
-      ),
+      context,
+      MaterialPageRoute(builder: (context) => const NewCityPage()),
     );
-    WeatherException? et;
-    (ForecastInfo, ForecastInfo)? forecasts;
-    (forecasts, et) = await fetchForecast(databaseHelper!, cityId);
 
     if (!mounted) return;
 
-    if (forecasts != null) {
-      int forecastCityId = await databaseHelper!.insertCityForecast(
-        cityId,
-        forecasts.$1,
-        forecasts.$2,
-      );
-      print('$cityId :: $forecastCityId');
-    } else {
-      final SnackBar snackBar =
-          SnackBar(content: Text('Error: ${et.toString()}'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    Points? points;
+    WeatherException? we;
+    (points, we) = await fetchPoints(result[0], result[1]);
+    if (points != null) {
+      int cityId = await widget.databaseHelper!.checkCityInfo(points, result);
+
+      if (!mounted) return;
+
+      switch (cityId) {
+        case -1:
+          exceptionSnackBar(
+            context,
+            WeatherException.nonUniqueId.toString(),
+            'newCityNavigate',
+          );
+          break;
+        case 0:
+          exceptionSnackBar(
+            context,
+            WeatherException.failedToInsert.toString(),
+            'newCityNavigate',
+          );
+        default:
+      }
+
+      (ForecastInfo, ForecastInfo)? forecasts;
+      (forecasts, we) = await fetchForecast(widget.databaseHelper!, cityId);
+
+      if (forecasts != null) {
+        int forecastCityId = await widget.databaseHelper!.insertCityForecast(
+          cityId,
+          forecasts.$1,
+          forecasts.$2,
+        );
+
+        if (!mounted) return;
+        if (forecastCityId <= 0) {
+          exceptionSnackBar(context, 'City not added.', 'newCityNavigate');
+        } else {
+          widget.currentCity = forecastCityId;
+          setState(() {});
+        }
+      } else {
+        if (!mounted) return;
+        exceptionSnackBar(context, we!.toString(), 'newCityNavigate');
+      }
     }
   }
 
   Future<void> updateAllCities() async {
-    List<CityInfo> updatedCities = await databaseHelper!.getCityInfos();
+    List<CityInfo> updatedCities = await widget.databaseHelper!.getCityInfos();
     setState(() {
-      allCities = updatedCities;
+      widget.allCities = updatedCities;
     });
   }
 
@@ -139,13 +164,14 @@ class _HomePageState extends State<HomePage> {
         padding: EdgeInsets.zero,
         children: [
           const DrawerHeader(child: Text('Menu')),
-          if (allCities != null)
-            for (int i = 0; i < allCities!.length; i++)
+          if (widget.allCities != null)
+            for (int i = 0; i < widget.allCities!.length; i++)
               ListTile(
-                title: Text('${allCities![i].city}, ${allCities![i].state}'),
+                title: Text(
+                    '${widget.allCities![i].city}, ${widget.allCities![i].state}'),
                 onTap: () {
                   Navigator.pop(context);
-                  currentCity = allCities![i].id;
+                  widget.currentCity = widget.allCities![i].id;
                 },
               ),
           ListTile(
@@ -160,32 +186,40 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  PreferredSizeWidget weatherAppBar() {
+    return AppBar(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      title: Text(widget.title),
+      centerTitle: true,
+      actions: <Widget>[
+        IconButton(
+          onPressed: () {
+            updateAllCities();
+          },
+          icon: const Icon(Icons.update),
+        )
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (allInitialized()) {
-      if (allCities!.isNotEmpty) {
+      if (widget.allCities!.isNotEmpty) {
         return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            title: Text(widget.title),
-            centerTitle: true,
-          ),
+          appBar: weatherAppBar(),
           backgroundColor: Theme.of(context).colorScheme.primary,
           body: SingleChildScrollView(
             child: WeatherInfo(
-              databaseHelper: databaseHelper!,
-              currentCity: currentCity!,
+              databaseHelper: widget.databaseHelper!,
+              currentCity: widget.currentCity!,
             ),
           ),
           drawer: menuDrawer(),
         );
       } else {
         return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            title: Text(widget.title),
-            centerTitle: true,
-          ),
+          appBar: weatherAppBar(),
           backgroundColor: Theme.of(context).colorScheme.primary,
           body: Text(
             'No Cities...',
@@ -196,11 +230,7 @@ class _HomePageState extends State<HomePage> {
       }
     } else {
       return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          title: Text(widget.title),
-          centerTitle: true,
-        ),
+        appBar: weatherAppBar(),
         backgroundColor: Theme.of(context).colorScheme.primary,
         body: Text(
           'Loading...',
@@ -213,8 +243,11 @@ class _HomePageState extends State<HomePage> {
 }
 
 class WeatherInfo extends StatefulWidget {
-  const WeatherInfo(
-      {super.key, required this.databaseHelper, required this.currentCity});
+  const WeatherInfo({
+    super.key,
+    required this.databaseHelper,
+    required this.currentCity,
+  });
 
   final DatabaseHelper databaseHelper;
   final int currentCity;
@@ -225,7 +258,7 @@ class WeatherInfo extends StatefulWidget {
 
 class _WeatherInfoState extends State<WeatherInfo> {
   int? _currentTemp;
-  List<List<int>>? _forecast;
+  List<int>? _daily;
   List<int>? _hourly;
 
   @override
@@ -233,7 +266,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
     super.initState();
 
     _currentTemp = 0;
-    _forecast = List<List<int>>.filled(7, List<int>.filled(2, 0));
+    _daily = List<int>.filled(14, 0);
     _hourly = List<int>.filled(24, 0);
 
     updateWeatherValues();
@@ -241,23 +274,14 @@ class _WeatherInfoState extends State<WeatherInfo> {
   }
 
   bool isInitialized() {
-    return (_currentTemp != null && _forecast != null && _hourly != null);
-  }
-
-  void toTemperatureList(List<ForecastPeriod> forecastPeriods) {
-    if (_forecast != null) {
-      for (int i = 0; i < forecastPeriods.length; i++) {
-        // group into forecast list
-        _forecast?[(i / 2).floor()][i % 2] = forecastPeriods[i].temperature;
-      }
-    }
+    return (_currentTemp != null && _daily != null && _hourly != null);
   }
 
   Future<void> dbSnackbar() async {
     // final List<CityInfo> result = await widget.databaseHelper.getCityInfos();
     CityForecast? cf;
-    WeatherException? et;
-    (cf, et) = await widget.databaseHelper.getCityForecast(widget.currentCity);
+    WeatherException? we;
+    (cf, we) = await widget.databaseHelper.getCityForecast(widget.currentCity);
     if (!mounted) return;
 
     if (cf != null) {
@@ -271,32 +295,23 @@ class _WeatherInfoState extends State<WeatherInfo> {
       );
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     } else {
-      print(et.toString());
+      print(we.toString());
     }
   }
 
   Future<void> updateWeatherValues() async {
     CityForecast? cityForecast;
-    WeatherException? et;
-    (cityForecast, et) =
+    WeatherException? we;
+    (cityForecast, we) =
         await widget.databaseHelper.getCityForecast(widget.currentCity);
     if (cityForecast != null) {
       setState(() {
         _currentTemp = cityForecast!.temperature;
-        // List<ForecastPeriod> dailyForecast =
-        //     jsonDecode(cityForecast.dailyForecast)
-        //         .map((e) => ForecastPeriod.fromJson(e));
-        // toTemperatureList(dailyForecast);
-        List<ForecastPeriod> daily = jsonDecode(cityForecast.dailyForecast);
-        toTemperatureList(daily);
-        _hourly = jsonDecode(cityForecast.hourlyForecast)
-            .map((e) => ForecastPeriod.fromJson(e));
+        _daily = cityForecast.dailyForecast;
+        _hourly = cityForecast.hourlyForecast;
       });
     } else {
-      final SnackBar snackBar = SnackBar(
-        content: Text('Error: ${et.toString()}'),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      exceptionSnackBar(context, we!.toString(), 'updateWeatherValues');
     }
   }
 
@@ -339,7 +354,7 @@ class _WeatherInfoState extends State<WeatherInfo> {
                   color: Colors.blueGrey.shade900,
                   borderRadius: BorderRadius.all(Radius.circular(10.0)),
                 ),
-                child: Forecast(forecast: _forecast!),
+                child: Daily(forecast: _daily!),
               ),
             ),
             ElevatedButton(
@@ -353,13 +368,13 @@ class _WeatherInfoState extends State<WeatherInfo> {
       );
     } else {
       return Center(
-        child: Text('Loading'),
+        child: Text('Loading Forecast...'),
       );
     }
   }
 }
 
-class CurrentWeather extends StatelessWidget {
+class CurrentWeather extends StatefulWidget {
   const CurrentWeather({
     super.key,
     required this.currentTemp,
@@ -367,6 +382,11 @@ class CurrentWeather extends StatelessWidget {
 
   final int currentTemp;
 
+  @override
+  State<CurrentWeather> createState() => _CurrentWeatherState();
+}
+
+class _CurrentWeatherState extends State<CurrentWeather> {
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -382,7 +402,7 @@ class CurrentWeather extends StatelessWidget {
         Padding(
           padding: EdgeInsets.all(8.0),
           child: Text(
-            '${currentTemp.toString()}°',
+            '${widget.currentTemp.toString()}°',
             style: TextStyle(fontSize: 80.0),
           ),
         ),
@@ -391,11 +411,16 @@ class CurrentWeather extends StatelessWidget {
   }
 }
 
-class Hourly extends StatelessWidget {
+class Hourly extends StatefulWidget {
   const Hourly({super.key, required this.hourly});
 
   final List<int> hourly;
 
+  @override
+  State<Hourly> createState() => _HourlyState();
+}
+
+class _HourlyState extends State<Hourly> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -404,7 +429,7 @@ class Hourly extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           // for (var temp in hourly)
-          for (int i = 0; i < hourly.length; i++)
+          for (int i = 0; i < widget.hourly.length; i++)
             Padding(
               padding: EdgeInsets.all(8.0),
               child: Column(
@@ -415,7 +440,7 @@ class Hourly extends StatelessWidget {
                     style: TextStyle(fontSize: 16.0),
                   ),
                   Text(
-                    '${hourly[i]}°',
+                    '${widget.hourly[i]}°',
                     // "$temp",
                     style: TextStyle(fontSize: 24.0),
                   ),
@@ -432,18 +457,23 @@ class Hourly extends StatelessWidget {
   }
 }
 
-class Forecast extends StatelessWidget {
-  const Forecast({super.key, required this.forecast});
+class Daily extends StatefulWidget {
+  const Daily({super.key, required this.forecast});
 
-  final List<List<int>> forecast;
+  final List<int> forecast;
 
+  @override
+  State<Daily> createState() => _DailyState();
+}
+
+class _DailyState extends State<Daily> {
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // for (var [a, e] in forecast)
-        for (int i = 0; i < forecast.length; i++)
+        for (int i = 0; i < widget.forecast.length; i += 2)
           Padding(
             padding: EdgeInsets.all(8.0),
             child: Row(
@@ -462,8 +492,7 @@ class Forecast extends StatelessWidget {
                   style: TextStyle(fontSize: 24.0),
                 ),
                 Text(
-                  '${forecast[i][0]}° / ${forecast[i][1]}°',
-                  // "$a / $e",
+                  '${widget.forecast[i]}° / ${widget.forecast[i + 1]}°',
                   style: TextStyle(fontSize: 24.0),
                 ),
               ],

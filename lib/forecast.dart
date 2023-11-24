@@ -13,28 +13,28 @@ Future<((ForecastInfo, ForecastInfo)?, WeatherException?)> fetchForecast(
   int id,
 ) async {
   CityInfo? cityInfo;
-  WeatherException? et;
-  ForecastInfo? forecastWeek;
+  WeatherException? we;
+  ForecastInfo? forecastDaily;
   ForecastInfo? forecastHourly;
-  (cityInfo, et) = await databaseHelper.getCityInfoId(id);
+  (cityInfo, we) = await databaseHelper.getCityInfoId(id);
   if (cityInfo != null) {
-    (forecastWeek, et) = await fetchForecastWeek(cityInfo);
-    if (forecastWeek != null) {
-      (forecastHourly, et) = await fetchForecastHourly(cityInfo);
+    (forecastDaily, we) = await fetchForecastDaily(cityInfo);
+    if (forecastDaily != null) {
+      (forecastHourly, we) = await fetchForecastHourly(cityInfo);
       if (forecastHourly != null) {
-        return ((forecastWeek, forecastHourly), null);
+        return ((forecastDaily, forecastHourly), null);
       } else {
-        return (null, et);
+        return (null, we);
       }
     } else {
-      return (null, et);
+      return (null, we);
     }
   } else {
-    return (null, et);
+    return (null, we);
   }
 }
 
-Future<(ForecastInfo?, WeatherException?)> fetchForecastWeek(
+Future<(ForecastInfo?, WeatherException?)> fetchForecastDaily(
     CityInfo cityInfo) async {
   final response = await http.get(
     Uri.parse(
@@ -47,7 +47,6 @@ Future<(ForecastInfo?, WeatherException?)> fetchForecastWeek(
       null
     );
   } else {
-    // could change this to returning some type of error
     return (null, WeatherException.non200Response);
   }
 }
@@ -65,7 +64,6 @@ Future<(ForecastInfo?, WeatherException?)> fetchForecastHourly(
       null
     );
   } else {
-    // could change this to returning some type of error
     return (null, WeatherException.non200Response);
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 
 enum WeatherException {
   cityInfoEmpty,
@@ -11,11 +10,11 @@ enum WeatherException {
 
 void exceptionSnackBar(
   BuildContext context,
-  WeatherException we,
+  String exception,
   String functionName,
 ) {
   final SnackBar snackBar = SnackBar(
-    content: Text('$functionName: Error - ${we.toString()}'),
+    content: Text('$functionName: Error - $exception'),
   );
   ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
