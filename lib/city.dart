@@ -107,7 +107,7 @@ class CityForecast {
   final String windDirection;
   final List<int> dailyForecast;
   final List<int> hourlyForecast;
-  final int endTime;
+  final int startTime;
   final int updateTime;
 
   CityForecast({
@@ -119,7 +119,7 @@ class CityForecast {
     required this.windDirection,
     required this.dailyForecast,
     required this.hourlyForecast,
-    required this.endTime,
+    required this.startTime,
     required this.updateTime,
   });
 
@@ -133,7 +133,7 @@ class CityForecast {
       'WindDirection': windDirection,
       'DailyForecast': dailyForecast,
       'HourlyForecast': hourlyForecast,
-      'EndTime': endTime,
+      'StartTime': startTime,
       'UpdateTime': updateTime,
     };
   }
@@ -147,7 +147,7 @@ class CityForecast {
         windDirection = res['WindDirection'],
         dailyForecast = res['DailyForecast'],
         hourlyForecast = res['HourlyForecast'],
-        endTime = res['EndTime'],
+        startTime = res['StartTime'],
         updateTime = res['UpdateTime'];
 }
 
@@ -215,7 +215,7 @@ class CityForecastCompanion {
   final int hour21;
   final int hour22;
   final int hour23;
-  final int endTime;
+  final int startTime;
   final int updateTime;
 
   CityForecast toCityForecast() {
@@ -270,7 +270,7 @@ class CityForecastCompanion {
       windDirection: windDirection,
       dailyForecast: daily,
       hourlyForecast: hourly,
-      endTime: endTime,
+      startTime: startTime,
       updateTime: updateTime,
     );
   }
@@ -320,7 +320,7 @@ class CityForecastCompanion {
     required this.hour21,
     required this.hour22,
     required this.hour23,
-    required this.endTime,
+    required this.startTime,
     required this.updateTime,
   });
 
@@ -370,7 +370,7 @@ class CityForecastCompanion {
       'Hour21': hour21,
       'Hour22': hour22,
       'Hour23': hour23,
-      'EndTime': endTime,
+      'StartTime': startTime,
       'UpdateTime': updateTime,
     };
   }
@@ -420,6 +420,6 @@ class CityForecastCompanion {
         hour21 = res['Hour21'],
         hour22 = res['Hour22'],
         hour23 = res['Hour23'],
-        endTime = res['EndTime'],
+        startTime = res['StartTime'],
         updateTime = res['UpdateTime'];
 }

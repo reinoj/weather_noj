@@ -49,7 +49,7 @@ CREATE TABLE CityForecast (
   WindDirection TEXT NOT NULL,
   $dailyString
   $hourlyString
-  EndTime INTEGER NOT NULL,
+  StartTime INTEGER NOT NULL,
   UpdateTime INTEGER NOT NULL,
   CheckedTime INTEGER NOT NULL
 )
@@ -204,7 +204,11 @@ CREATE TABLE CityForecast (
       // 900,000 ms = 15 min
       if (currentTime - cityForecast.updateTime > 900000) {
         CityForecast? newCityForecast;
-        (newCityForecast, et) = await fetchAndInsertOrUpdate(id, true);
+        (newCityForecast, et) = await fetchAndInsertOrUpdate(
+          id,
+          true,
+          cityForecast.startTime,
+        );
         if (newCityForecast != null) {
           return (newCityForecast, null);
         } else {
@@ -217,7 +221,7 @@ CREATE TABLE CityForecast (
       switch (et) {
         case WeatherException.cityForecastEmpty:
           CityForecast? newCityForecast;
-          (newCityForecast, et) = await fetchAndInsertOrUpdate(id, false);
+          (newCityForecast, et) = await fetchAndInsertOrUpdate(id, false, null);
           if (newCityForecast != null) {
             return (newCityForecast, null);
           } else {
@@ -249,21 +253,32 @@ CREATE TABLE CityForecast (
           .sublist(0, 24)
           .map((e) => e.temperature)
           .toList(),
-      endTime: DateTime.parse(forecastDaily.properties.periods[0].endTime)
+      startTime: DateTime.parse(forecastDaily.properties.periods[0].endTime)
           .millisecondsSinceEpoch,
       updateTime: DateTime.parse(forecastDaily.properties.updated)
           .millisecondsSinceEpoch,
     );
   }
 
+  // bool insertOrUpdate: false -> insert, true -> update
   Future<(CityForecast?, WeatherException?)> fetchAndInsertOrUpdate(
-      id, bool insertOrUpdate) async {
+    id,
+    bool insertOrUpdate,
+    int? time,
+  ) async {
     (ForecastInfo, ForecastInfo)? forecasts;
     WeatherException? et;
     (forecasts, et) = await fetchForecast(_databaseHelper, id);
     if (forecasts != null) {
       if (insertOrUpdate) {
-        int _ = await updateCityForecast(id, forecasts.$1, forecasts.$2);
+        DateTime? dt =
+            DateTime.tryParse(forecasts.$1.properties.periods[0].endTime);
+        if (dt == null) {
+          return (null, WeatherException.dateFormatError);
+        }
+        if (time! - dt.millisecondsSinceEpoch >= 86400000) {
+          int _ = await updateCityForecast(id, forecasts.$1, forecasts.$2);
+        } else {}
       } else {
         int _ = await insertCityForecast(id, forecasts.$1, forecasts.$2);
       }

@@ -6,6 +6,7 @@ enum WeatherException {
   nonUniqueId,
   non200Response,
   failedToInsert,
+  dateFormatError,
 }
 
 void exceptionSnackBar(
