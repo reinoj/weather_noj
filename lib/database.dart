@@ -18,7 +18,6 @@ class DatabaseHelper {
 
   Future<void> initDB() async {
     String path = await getDatabasesPath();
-    // print('db path: $path');
     db = await openDatabase(join(path, 'City.db'), onCreate: (db, version) {
       db.execute('''
 CREATE TABLE CityInfo (
@@ -50,8 +49,7 @@ CREATE TABLE CityForecast (
   $dailyString
   $hourlyString
   StartTime INTEGER NOT NULL,
-  UpdateTime INTEGER NOT NULL,
-  CheckedTime INTEGER NOT NULL
+  UpdateTime INTEGER NOT NULL
 )
       ''');
     }, version: 3);
@@ -152,28 +150,20 @@ CREATE TABLE CityForecast (
 
   // ----- ----- CityForecast ----- -----
 
-  Future<int> insertCityForecast(
-    int id,
-    ForecastInfo forecastWeek,
-    ForecastInfo forecastHourly,
-  ) async {
+  Future<int> insertCityForecast(CityForecast cityForecast) async {
     int result = await db.insert(
       'CityForecast',
-      forecastsToCityForecast(id, forecastWeek, forecastHourly).toMap(),
+      cityForecast.toCityForecastCompanion().toMap(),
     );
     return result;
   }
 
-  Future<int> updateCityForecast(
-    int id,
-    ForecastInfo forecastWeek,
-    ForecastInfo forecastHourly,
-  ) async {
+  Future<int> updateCityForecast(CityForecast cityForecast) async {
     int result = await db.update(
       'CityForecast',
-      forecastsToCityForecast(id, forecastWeek, forecastHourly).toMap(),
+      cityForecast.toCityForecastCompanion().toMap(),
       where: 'Id = ?',
-      whereArgs: [id],
+      whereArgs: [cityForecast.id],
     );
     return result;
   }
@@ -188,7 +178,7 @@ CREATE TABLE CityForecast (
       case 0:
         return (null, WeatherException.cityForecastEmpty);
       case 1:
-        return (CityForecast.fromMap(map[0]), null);
+        return (CityForecastCompanion.fromMap(map[0]).toCityForecast(), null);
 
       default:
         return (null, WeatherException.nonUniqueId);
@@ -234,32 +224,6 @@ CREATE TABLE CityForecast (
     }
   }
 
-  CityForecast forecastsToCityForecast(
-    int id,
-    ForecastInfo forecastDaily,
-    ForecastInfo forecastHourly,
-  ) {
-    return CityForecast(
-      id: id,
-      temperature: forecastDaily.properties.periods[0].temperature,
-      probOfPrecipitation:
-          forecastDaily.properties.periods[0].probabilityofPrecipitation.value!,
-      humidity: forecastDaily.properties.periods[0].relativeHumidity.value!,
-      windSpeed: forecastDaily.properties.periods[0].windSpeed,
-      windDirection: forecastDaily.properties.periods[0].windDirection,
-      dailyForecast:
-          forecastDaily.properties.periods.map((e) => e.temperature).toList(),
-      hourlyForecast: forecastHourly.properties.periods
-          .sublist(0, 24)
-          .map((e) => e.temperature)
-          .toList(),
-      startTime: DateTime.parse(forecastDaily.properties.periods[0].endTime)
-          .millisecondsSinceEpoch,
-      updateTime: DateTime.parse(forecastDaily.properties.updated)
-          .millisecondsSinceEpoch,
-    );
-  }
-
   // bool insertOrUpdate: false -> insert, true -> update
   Future<(CityForecast?, WeatherException?)> fetchAndInsertOrUpdate(
     id,
@@ -277,12 +241,16 @@ CREATE TABLE CityForecast (
           return (null, WeatherException.dateFormatError);
         }
         if (time! - dt.millisecondsSinceEpoch >= 86400000) {
-          int _ = await updateCityForecast(id, forecasts.$1, forecasts.$2);
+          int _ = await updateCityForecast(
+            toCityForecast(forecasts.$1, forecasts.$2, id),
+          );
         } else {}
       } else {
-        int _ = await insertCityForecast(id, forecasts.$1, forecasts.$2);
+        int _ = await insertCityForecast(
+          toCityForecast(forecasts.$1, forecasts.$2, id),
+        );
       }
-      return (forecastsToCityForecast(id, forecasts.$1, forecasts.$2), null);
+      return (toCityForecast(forecasts.$1, forecasts.$2, id), null);
     } else {
       return (null, et);
     }

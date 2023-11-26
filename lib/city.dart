@@ -97,7 +97,14 @@ class CityInfoCompanion {
 }
 
 // ----- ----- ----- -----
+/*
+toCityForecastCompanion()
+for i in range(0,14):
+  print(f'day{i//2}_{i%2}: dailyForecast[{i}],')
 
+for i in range(0,24):
+  print(f'hour{i}: hourlyForcast[{i}],')
+*/
 class CityForecast {
   final int id;
   final int temperature;
@@ -109,6 +116,57 @@ class CityForecast {
   final List<int> hourlyForecast;
   final int startTime;
   final int updateTime;
+
+  CityForecastCompanion toCityForecastCompanion() {
+    return CityForecastCompanion(
+      id: id,
+      temperature: temperature,
+      probOfPrecipitation: probOfPrecipitation,
+      humidity: humidity,
+      windSpeed: windSpeed,
+      windDirection: windDirection,
+      day0_0: dailyForecast[0],
+      day0_1: dailyForecast[1],
+      day1_0: dailyForecast[2],
+      day1_1: dailyForecast[3],
+      day2_0: dailyForecast[4],
+      day2_1: dailyForecast[5],
+      day3_0: dailyForecast[6],
+      day3_1: dailyForecast[7],
+      day4_0: dailyForecast[8],
+      day4_1: dailyForecast[9],
+      day5_0: dailyForecast[10],
+      day5_1: dailyForecast[11],
+      day6_0: dailyForecast[12],
+      day6_1: dailyForecast[13],
+      hour0: hourlyForecast[0],
+      hour1: hourlyForecast[1],
+      hour2: hourlyForecast[2],
+      hour3: hourlyForecast[3],
+      hour4: hourlyForecast[4],
+      hour5: hourlyForecast[5],
+      hour6: hourlyForecast[6],
+      hour7: hourlyForecast[7],
+      hour8: hourlyForecast[8],
+      hour9: hourlyForecast[9],
+      hour10: hourlyForecast[10],
+      hour11: hourlyForecast[11],
+      hour12: hourlyForecast[12],
+      hour13: hourlyForecast[13],
+      hour14: hourlyForecast[14],
+      hour15: hourlyForecast[15],
+      hour16: hourlyForecast[16],
+      hour17: hourlyForecast[17],
+      hour18: hourlyForecast[18],
+      hour19: hourlyForecast[19],
+      hour20: hourlyForecast[20],
+      hour21: hourlyForecast[21],
+      hour22: hourlyForecast[22],
+      hour23: hourlyForecast[23],
+      startTime: startTime,
+      updateTime: updateTime,
+    );
+  }
 
   CityForecast({
     required this.id,

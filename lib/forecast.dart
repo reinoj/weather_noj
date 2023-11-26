@@ -68,6 +68,32 @@ Future<(ForecastInfo?, WeatherException?)> fetchForecastHourly(
   }
 }
 
+CityForecast toCityForecast(
+  ForecastInfo forecastDaily,
+  ForecastInfo forecastHourly,
+  int id,
+) {
+  return CityForecast(
+    id: id,
+    temperature: forecastHourly.properties.periods[0].temperature,
+    probOfPrecipitation:
+        forecastHourly.properties.periods[0].probabilityOfPrecipitation.value!,
+    humidity: forecastHourly.properties.periods[0].relativeHumidity.value!,
+    windSpeed: forecastHourly.properties.periods[0].windSpeed,
+    windDirection: forecastHourly.properties.periods[0].windDirection,
+    dailyForecast:
+        forecastDaily.properties.periods.map((e) => e.temperature).toList(),
+    hourlyForecast: forecastHourly.properties.periods
+        .sublist(1, 25)
+        .map((e) => e.temperature)
+        .toList(),
+    startTime: DateTime.parse(forecastHourly.properties.periods[0].endTime)
+        .millisecondsSinceEpoch,
+    updateTime: DateTime.parse(forecastHourly.properties.updated)
+        .millisecondsSinceEpoch,
+  );
+}
+
 @JsonSerializable()
 class ForecastInfo {
   final ForecastProperties properties;
@@ -77,9 +103,9 @@ class ForecastInfo {
   });
 
   factory ForecastInfo.fromJson(Map<String, dynamic> json) =>
-      _$ForecastFromJson(json);
+      _$ForecastInfoFromJson(json);
 
-  Map<String, dynamic> toJson() => _$ForecastToJson(this);
+  Map<String, dynamic> toJson() => _$ForecastInfoToJson(this);
 }
 
 @JsonSerializable()
@@ -100,10 +126,9 @@ class ForecastProperties {
 
 @JsonSerializable()
 class ForecastPeriod {
-  final String
-      endTime; // subtract 12 hours from time, so the evening time will be the same day as morning
+  final String endTime;
   final int temperature;
-  final UnitValue probabilityofPrecipitation;
+  final UnitValue probabilityOfPrecipitation;
   final UnitValue relativeHumidity;
   final String windSpeed;
   final String windDirection;
@@ -111,7 +136,7 @@ class ForecastPeriod {
   ForecastPeriod({
     required this.endTime,
     required this.temperature,
-    required this.probabilityofPrecipitation,
+    required this.probabilityOfPrecipitation,
     required this.relativeHumidity,
     required this.windSpeed,
     required this.windDirection,

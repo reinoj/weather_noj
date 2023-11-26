@@ -132,17 +132,16 @@ class _HomePageState extends State<HomePage> {
 
       if (forecasts != null) {
         int forecastCityId = await widget.databaseHelper!.insertCityForecast(
-          cityId,
-          forecasts.$1,
-          forecasts.$2,
+          toCityForecast(forecasts.$1, forecasts.$2, cityId),
         );
 
         if (!mounted) return;
         if (forecastCityId <= 0) {
           exceptionSnackBar(context, 'City not added.', 'newCityNavigate');
         } else {
-          widget.currentCity = forecastCityId;
-          setState(() {});
+          setState(() {
+            widget.currentCity = forecastCityId;
+          });
         }
       } else {
         if (!mounted) return;
