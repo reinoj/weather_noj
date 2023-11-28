@@ -276,8 +276,8 @@ class CityForecastCompanion {
   final int startTime;
   final int updateTime;
 
-  CityForecast toCityForecast() {
-    List<int> daily = [
+  List<int> getDaily() {
+    return [
       day0_0,
       day0_1,
       day1_0,
@@ -293,7 +293,10 @@ class CityForecastCompanion {
       day6_0,
       day6_1,
     ];
-    List<int> hourly = [
+  }
+
+  List<int> getHourly() {
+    return [
       hour0,
       hour1,
       hour2,
@@ -319,6 +322,11 @@ class CityForecastCompanion {
       hour22,
       hour23,
     ];
+  }
+
+  CityForecast toCityForecast() {
+    List<int> daily = getDaily();
+    List<int> hourly = getHourly();
     return CityForecast(
       id: id,
       temperature: temperature,

@@ -81,12 +81,8 @@ CityForecast toCityForecast(
     humidity: forecastHourly.properties.periods[0].relativeHumidity.value!,
     windSpeed: forecastHourly.properties.periods[0].windSpeed,
     windDirection: forecastHourly.properties.periods[0].windDirection,
-    dailyForecast:
-        forecastDaily.properties.periods.map((e) => e.temperature).toList(),
-    hourlyForecast: forecastHourly.properties.periods
-        .sublist(1, 25)
-        .map((e) => e.temperature)
-        .toList(),
+    dailyForecast: forecastDaily.toDailyForecast(),
+    hourlyForecast: forecastHourly.toHourlyForecast(),
     startTime: DateTime.parse(forecastHourly.properties.periods[0].endTime)
         .millisecondsSinceEpoch,
     updateTime: DateTime.parse(forecastHourly.properties.updated)
@@ -106,6 +102,14 @@ class ForecastInfo {
       _$ForecastInfoFromJson(json);
 
   Map<String, dynamic> toJson() => _$ForecastInfoToJson(this);
+
+  List<int> toDailyForecast() {
+    return properties.periods.map((e) => e.temperature).toList();
+  }
+
+  List<int> toHourlyForecast() {
+    return properties.periods.sublist(1, 25).map((e) => e.temperature).toList();
+  }
 }
 
 @JsonSerializable()

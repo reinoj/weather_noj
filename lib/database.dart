@@ -158,7 +158,57 @@ CREATE TABLE CityForecast (
     return result;
   }
 
+/*
+check city forecast should take in and id, and check the times to see what needs to be udpated.
+then have 2 update functions for hourly and daily, for updating the relevant rows
+*/
   Future<int> updateCityForecast(CityForecast cityForecast) async {
+    int now = DateTime.now().millisecondsSinceEpoch;
+    int timeSinceUpdate = now - cityForecast.updateTime;
+    if (timeSinceUpdate > 900000) {
+      (CityInfo?, WeatherException?) cityInfo =
+          await getCityInfoId(cityForecast.id);
+      if (cityInfo.$1 == null) {
+        return -1;
+      }
+      // check hourly
+      await fetchForecastDaily(cityInfo.$1!);
+
+      DateTime updateTime =
+          DateTime.fromMillisecondsSinceEpoch(cityForecast.updateTime);
+      DateTime updateThreshold;
+      switch (updateTime.hour) {
+        case < 5:
+          updateThreshold = DateTime(
+            updateTime.year,
+            updateTime.month,
+            updateTime.day,
+            6,
+          );
+          break;
+        case < 18:
+          updateThreshold = DateTime(
+            updateTime.year,
+            updateTime.month,
+            updateTime.day,
+            18,
+          );
+          break;
+        default:
+          updateThreshold = DateTime(
+            updateTime.year,
+            updateTime.month,
+            updateTime.day,
+            6,
+          );
+          updateThreshold.add(Duration(days: 1));
+          break;
+      }
+      if (now - updateThreshold.millisecondsSinceEpoch >= 0) {
+        // check daily
+      }
+    }
+
     int result = await db.update(
       'CityForecast',
       cityForecast.toCityForecastCompanion().toMap(),
@@ -178,81 +228,32 @@ CREATE TABLE CityForecast (
       case 0:
         return (null, WeatherException.cityForecastEmpty);
       case 1:
-        return (CityForecastCompanion.fromMap(map[0]).toCityForecast(), null);
+        CityForecast cf =
+            CityForecastCompanion.fromMap(map[0]).toCityForecast();
+        return (cf, null);
 
       default:
         return (null, WeatherException.nonUniqueId);
     }
   }
 
-  Future<(CityForecast?, WeatherException?)> checkCityForecast(int id) async {
-    WeatherException? et;
-    CityForecast? cityForecast;
-    (cityForecast, et) = await getCityForecast(id);
-    if (cityForecast != null) {
-      int currentTime = DateTime.now().millisecondsSinceEpoch;
-      // 900,000 ms = 15 min
-      if (currentTime - cityForecast.updateTime > 900000) {
-        CityForecast? newCityForecast;
-        (newCityForecast, et) = await fetchAndInsertOrUpdate(
-          id,
-          true,
-          cityForecast.startTime,
-        );
-        if (newCityForecast != null) {
-          return (newCityForecast, null);
-        } else {
-          return (null, et);
-        }
-      } else {
-        return (cityForecast, null);
-      }
-    } else {
-      switch (et) {
-        case WeatherException.cityForecastEmpty:
-          CityForecast? newCityForecast;
-          (newCityForecast, et) = await fetchAndInsertOrUpdate(id, false, null);
-          if (newCityForecast != null) {
-            return (newCityForecast, null);
-          } else {
-            return (null, et);
-          }
-
-        default:
-          return (null, et);
+  Future<void> checkDaily(CityForecast cityForecast) async {
+    (CityInfo?, WeatherException?) cityInfo =
+        await getCityInfoId(cityForecast.id);
+    if (cityInfo.$1 != null) {
+      (ForecastInfo?, WeatherException?) dailyForecast =
+          await fetchForecastDaily(cityInfo.$1!);
+      if (dailyForecast.$1 != null) {
+        updateDaily(cityForecast.id, dailyForecast.$1!.toDailyForecast());
       }
     }
   }
 
-  // bool insertOrUpdate: false -> insert, true -> update
-  Future<(CityForecast?, WeatherException?)> fetchAndInsertOrUpdate(
-    id,
-    bool insertOrUpdate,
-    int? time,
-  ) async {
-    (ForecastInfo, ForecastInfo)? forecasts;
-    WeatherException? et;
-    (forecasts, et) = await fetchForecast(_databaseHelper, id);
-    if (forecasts != null) {
-      if (insertOrUpdate) {
-        DateTime? dt =
-            DateTime.tryParse(forecasts.$1.properties.periods[0].endTime);
-        if (dt == null) {
-          return (null, WeatherException.dateFormatError);
-        }
-        if (time! - dt.millisecondsSinceEpoch >= 86400000) {
-          int _ = await updateCityForecast(
-            toCityForecast(forecasts.$1, forecasts.$2, id),
-          );
-        } else {}
-      } else {
-        int _ = await insertCityForecast(
-          toCityForecast(forecasts.$1, forecasts.$2, id),
-        );
-      }
-      return (toCityForecast(forecasts.$1, forecasts.$2, id), null);
-    } else {
-      return (null, et);
-    }
+  Future<void> updateDaily(int id, List<int> dailyForecast) async {
+    int _ = await db.rawUpdate('''
+UPDATE CityForecast
+SET day0_0 = ?, day0_1 = ?, day1_0 = ?, day1_1 = ?, day2_0 = ?, day2_1 = ?, day3_0 = ?, day3_1 = ?, day4_0 = ?, day4_1 = ?, day5_0 = ?, day5_1 = ?, day6_0 = ?, day6_1 = ?
+WHERE Id = ?
+''', [...dailyForecast, id]);
   }
 }
