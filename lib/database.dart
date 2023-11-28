@@ -163,52 +163,6 @@ check city forecast should take in and id, and check the times to see what needs
 then have 2 update functions for hourly and daily, for updating the relevant rows
 */
   Future<int> updateCityForecast(CityForecast cityForecast) async {
-    int now = DateTime.now().millisecondsSinceEpoch;
-    int timeSinceUpdate = now - cityForecast.updateTime;
-    if (timeSinceUpdate > 900000) {
-      (CityInfo?, WeatherException?) cityInfo =
-          await getCityInfoId(cityForecast.id);
-      if (cityInfo.$1 == null) {
-        return -1;
-      }
-      // check hourly
-      await fetchForecastDaily(cityInfo.$1!);
-
-      DateTime updateTime =
-          DateTime.fromMillisecondsSinceEpoch(cityForecast.updateTime);
-      DateTime updateThreshold;
-      switch (updateTime.hour) {
-        case < 5:
-          updateThreshold = DateTime(
-            updateTime.year,
-            updateTime.month,
-            updateTime.day,
-            6,
-          );
-          break;
-        case < 18:
-          updateThreshold = DateTime(
-            updateTime.year,
-            updateTime.month,
-            updateTime.day,
-            18,
-          );
-          break;
-        default:
-          updateThreshold = DateTime(
-            updateTime.year,
-            updateTime.month,
-            updateTime.day,
-            6,
-          );
-          updateThreshold.add(Duration(days: 1));
-          break;
-      }
-      if (now - updateThreshold.millisecondsSinceEpoch >= 0) {
-        // check daily
-      }
-    }
-
     int result = await db.update(
       'CityForecast',
       cityForecast.toCityForecastCompanion().toMap(),
@@ -237,23 +191,125 @@ then have 2 update functions for hourly and daily, for updating the relevant row
     }
   }
 
-  Future<void> checkDaily(CityForecast cityForecast) async {
-    (CityInfo?, WeatherException?) cityInfo =
-        await getCityInfoId(cityForecast.id);
-    if (cityInfo.$1 != null) {
-      (ForecastInfo?, WeatherException?) dailyForecast =
-          await fetchForecastDaily(cityInfo.$1!);
-      if (dailyForecast.$1 != null) {
-        updateDaily(cityForecast.id, dailyForecast.$1!.toDailyForecast());
+  int getUpdateThreshold(DateTime updateTime) {
+    DateTime updateThreshold;
+    switch (updateTime.hour) {
+      case < 5:
+        // 0-5
+        updateThreshold = DateTime(
+          updateTime.year,
+          updateTime.month,
+          updateTime.day,
+          6,
+        );
+        break;
+      case < 18:
+        // 6-17
+        updateThreshold = DateTime(
+          updateTime.year,
+          updateTime.month,
+          updateTime.day,
+          18,
+        );
+        break;
+      default:
+        // 18-23
+        updateThreshold = DateTime(
+          updateTime.year,
+          updateTime.month,
+          updateTime.day,
+          6,
+        );
+        updateThreshold.add(Duration(days: 1));
+        break;
+    }
+    return updateThreshold.millisecondsSinceEpoch;
+  }
+
+  Future<void> checkForecast(int id) async {
+    (CityForecast?, WeatherException?) cityForecast = await getCityForecast(id);
+    if (cityForecast.$1 == null) return;
+    int now = DateTime.now().millisecondsSinceEpoch;
+    int timeSinceUpdate = now - cityForecast.$1!.updateTime;
+    if (timeSinceUpdate > 900000) {
+      (CityInfo?, WeatherException?) cityInfo =
+          await getCityInfoId(cityForecast.$1!.id);
+      if (cityInfo.$1 == null) {
+        return;
       }
+      // check hourly
+      await checkHourly(cityInfo.$1!);
+
+      DateTime updateTime =
+          DateTime.fromMillisecondsSinceEpoch(cityForecast.$1!.updateTime);
+      int updateThreshold = getUpdateThreshold(updateTime);
+      if (now - updateThreshold >= 0) {
+        await checkDaily(cityInfo.$1!);
+      }
+    }
+  }
+
+  Future<void> checkDaily(CityInfo cityInfo) async {
+    (ForecastInfo?, WeatherException?) dailyForecast =
+        await fetchForecastDaily(cityInfo);
+    if (dailyForecast.$1 != null) {
+      updateDaily(cityInfo.id, dailyForecast.$1!.toDailyForecast());
     }
   }
 
   Future<void> updateDaily(int id, List<int> dailyForecast) async {
     int _ = await db.rawUpdate('''
 UPDATE CityForecast
-SET day0_0 = ?, day0_1 = ?, day1_0 = ?, day1_1 = ?, day2_0 = ?, day2_1 = ?, day3_0 = ?, day3_1 = ?, day4_0 = ?, day4_1 = ?, day5_0 = ?, day5_1 = ?, day6_0 = ?, day6_1 = ?
+SET Day0_0 = ?, Day0_1 = ?, Day1_0 = ?, Day1_1 = ?, Day2_0 = ?, Day2_1 = ?, Day3_0 = ?, Day3_1 = ?, Day4_0 = ?, Day4_1 = ?, Day5_0 = ?, Day5_1 = ?, Day6_0 = ?, Day6_1 = ?
 WHERE Id = ?
 ''', [...dailyForecast, id]);
   }
+
+  Future<void> checkHourly(CityInfo cityInfo) async {
+    (ForecastInfo?, WeatherException?) hourlyForecast =
+        await fetchForecastDaily(cityInfo);
+    if (hourlyForecast.$1 != null) {
+      await updateHourly(cityInfo.id, hourlyForecast.$1!);
+    }
+  }
+
+  /*
+  s = ''
+  for i in range(0,24):
+    s += f'Hour{i} = ?, '
+  */
+  Future<void> updateHourly(int id, ForecastInfo forecastInfo) async {
+    int pop = forecastInfo
+                .properties.periods[0].probabilityOfPrecipitation.value !=
+            null
+        ? forecastInfo.properties.periods[0].probabilityOfPrecipitation.value!
+        : 0;
+    int humidity =
+        forecastInfo.properties.periods[0].relativeHumidity.value != null
+            ? forecastInfo.properties.periods[0].relativeHumidity.value!
+            : 0;
+    int _ = await db.rawUpdate('''
+UPDATE CityForecast
+SET Temperature = ?, ProbOfPrecipitation = ?, Humidity = ?, WindSpeed = ?, WindDirection = ?, Hour0 = ?, Hour1 = ?, Hour2 = ?, Hour3 = ?, Hour4 = ?, Hour5 = ?, Hour6 = ?, Hour7 = ?, Hour8 = ?, Hour9 = ?, Hour10 = ?, Hour11 = ?, Hour12 = ?, Hour13 = ?, Hour14 = ?, Hour15 = ?, Hour16 = ?, Hour17 = ?, Hour18 = ?, Hour19 = ?, Hour20 = ?, Hour21 = ?, Hour22 = ?, Hour23 = ?, StartTime = ?, UpdateTime = ?
+WHERE Id = ?
+''', [
+      forecastInfo.properties.periods[0].temperature,
+      pop,
+      humidity,
+      forecastInfo.properties.periods[0].windSpeed,
+      forecastInfo.properties.periods[0].windDirection,
+      ...forecastInfo.toHourlyForecast(),
+      DateTime.parse(forecastInfo.properties.periods[0].endTime)
+              .millisecondsSinceEpoch -
+          3600000,
+      DateTime.parse(forecastInfo.properties.updated).millisecondsSinceEpoch,
+      id,
+    ]);
+  }
 }
+
+/*
+
+
+
+*/

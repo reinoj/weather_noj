@@ -193,7 +193,9 @@ class _HomePageState extends State<HomePage> {
       actions: <Widget>[
         IconButton(
           onPressed: () {
-            updateAllCities();
+            if (widget.currentCity != null) {
+              widget.databaseHelper!.checkForecast(widget.currentCity!);
+            }
           },
           icon: const Icon(Icons.update),
         )

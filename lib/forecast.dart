@@ -73,18 +73,27 @@ CityForecast toCityForecast(
   ForecastInfo forecastHourly,
   int id,
 ) {
+  int pop = forecastHourly
+              .properties.periods[0].probabilityOfPrecipitation.value !=
+          null
+      ? forecastHourly.properties.periods[0].probabilityOfPrecipitation.value!
+      : 0;
+  int humidity =
+      forecastHourly.properties.periods[0].relativeHumidity.value != null
+          ? forecastHourly.properties.periods[0].relativeHumidity.value!
+          : 0;
   return CityForecast(
     id: id,
     temperature: forecastHourly.properties.periods[0].temperature,
-    probOfPrecipitation:
-        forecastHourly.properties.periods[0].probabilityOfPrecipitation.value!,
-    humidity: forecastHourly.properties.periods[0].relativeHumidity.value!,
+    probOfPrecipitation: pop,
+    humidity: humidity,
     windSpeed: forecastHourly.properties.periods[0].windSpeed,
     windDirection: forecastHourly.properties.periods[0].windDirection,
     dailyForecast: forecastDaily.toDailyForecast(),
     hourlyForecast: forecastHourly.toHourlyForecast(),
     startTime: DateTime.parse(forecastHourly.properties.periods[0].endTime)
-        .millisecondsSinceEpoch,
+            .millisecondsSinceEpoch -
+        3600000,
     updateTime: DateTime.parse(forecastHourly.properties.updated)
         .millisecondsSinceEpoch,
   );
