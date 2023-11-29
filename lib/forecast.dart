@@ -89,6 +89,7 @@ CityForecast toCityForecast(
     humidity: humidity,
     windSpeed: forecastHourly.properties.periods[0].windSpeed,
     windDirection: forecastHourly.properties.periods[0].windDirection,
+    icon: iconStringToInt(forecastHourly.properties.periods[0].icon),
     dailyForecast: forecastDaily.toDailyForecast(),
     hourlyForecast: forecastHourly.toHourlyForecast(),
     startTime: DateTime.parse(forecastHourly.properties.periods[0].endTime)
@@ -145,6 +146,7 @@ class ForecastPeriod {
   final UnitValue relativeHumidity;
   final String windSpeed;
   final String windDirection;
+  final String icon;
 
   ForecastPeriod({
     required this.endTime,
@@ -153,6 +155,7 @@ class ForecastPeriod {
     required this.relativeHumidity,
     required this.windSpeed,
     required this.windDirection,
+    required this.icon,
   });
 
   factory ForecastPeriod.fromJson(Map<String, dynamic> json) =>

@@ -40,6 +40,7 @@ ForecastPeriod _$ForecastPeriodFromJson(Map<String, dynamic> json) =>
           UnitValue.fromJson(json['relativeHumidity'] as Map<String, dynamic>),
       windSpeed: json['windSpeed'] as String,
       windDirection: json['windDirection'] as String,
+      icon: json['icon'] as String,
     );
 
 Map<String, dynamic> _$ForecastPeriodToJson(ForecastPeriod instance) =>
@@ -50,6 +51,7 @@ Map<String, dynamic> _$ForecastPeriodToJson(ForecastPeriod instance) =>
       'relativeHumidity': instance.relativeHumidity,
       'windSpeed': instance.windSpeed,
       'windDirection': instance.windDirection,
+      'icon': instance.icon,
     };
 
 UnitValue _$UnitValueFromJson(Map<String, dynamic> json) => UnitValue(

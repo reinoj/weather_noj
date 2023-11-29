@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class CityInfo {
   final int id;
   final String city;
@@ -112,6 +114,7 @@ class CityForecast {
   final int humidity;
   final String windSpeed;
   final String windDirection;
+  final int icon;
   final List<int> dailyForecast;
   final List<int> hourlyForecast;
   final int startTime;
@@ -125,6 +128,7 @@ class CityForecast {
       humidity: humidity,
       windSpeed: windSpeed,
       windDirection: windDirection,
+      icon: icon,
       day0_0: dailyForecast[0],
       day0_1: dailyForecast[1],
       day1_0: dailyForecast[2],
@@ -175,6 +179,7 @@ class CityForecast {
     required this.humidity,
     required this.windSpeed,
     required this.windDirection,
+    required this.icon,
     required this.dailyForecast,
     required this.hourlyForecast,
     required this.startTime,
@@ -189,6 +194,7 @@ class CityForecast {
       'Humidity': humidity,
       'WindSpeed': windSpeed,
       'WindDirection': windDirection,
+      'Icon': icon,
       'DailyForecast': dailyForecast,
       'HourlyForecast': hourlyForecast,
       'StartTime': startTime,
@@ -203,6 +209,7 @@ class CityForecast {
         humidity = res['Humidity'],
         windSpeed = res['WindSpeed'],
         windDirection = res['WindDirection'],
+        icon = res['Icon'],
         dailyForecast = res['DailyForecast'],
         hourlyForecast = res['HourlyForecast'],
         startTime = res['StartTime'],
@@ -235,6 +242,7 @@ class CityForecastCompanion {
   final int humidity;
   final String windSpeed;
   final String windDirection;
+  final int icon;
   final int day0_0;
   final int day0_1;
   final int day1_0;
@@ -334,6 +342,7 @@ class CityForecastCompanion {
       humidity: humidity,
       windSpeed: windSpeed,
       windDirection: windDirection,
+      icon: icon,
       dailyForecast: daily,
       hourlyForecast: hourly,
       startTime: startTime,
@@ -348,6 +357,7 @@ class CityForecastCompanion {
     required this.humidity,
     required this.windSpeed,
     required this.windDirection,
+    required this.icon,
     required this.day0_0,
     required this.day0_1,
     required this.day1_0,
@@ -398,6 +408,7 @@ class CityForecastCompanion {
       'Humidity': humidity,
       'WindSpeed': windSpeed,
       'WindDirection': windDirection,
+      'Icon': icon,
       'Day0_0': day0_0,
       'Day0_1': day0_1,
       'Day1_0': day1_0,
@@ -448,6 +459,7 @@ class CityForecastCompanion {
         humidity = res['Humidity'],
         windSpeed = res['WindSpeed'],
         windDirection = res['WindDirection'],
+        icon = res['Icon'],
         day0_0 = res['Day0_0'],
         day0_1 = res['Day0_1'],
         day1_0 = res['Day1_0'],
@@ -488,4 +500,59 @@ class CityForecastCompanion {
         hour23 = res['Hour23'],
         startTime = res['StartTime'],
         updateTime = res['UpdateTime'];
+}
+
+/*
+i = 0
+for s in j['icons']:
+  print(f'\'{s}\': {i},')
+  i += 1
+*/
+final Map<String, int> apiIconMap = Map<String, int>.fromEntries(
+  <String, int>{
+    'skc': 0,
+    'few': 1,
+    'sct': 2,
+    'bkn': 3,
+    'ovc': 4,
+    'wind_skc': 5,
+    'wind_few': 6,
+    'wind_sct': 7,
+    'wind_bkn': 8,
+    'wind_ovc': 9,
+    'snow': 10,
+    'rain_snow': 11,
+    'rain_sleet': 12,
+    'snow_sleet': 13,
+    'fzra': 14,
+    'rain_fzra': 15,
+    'snow_fzra': 16,
+    'sleet': 17,
+    'rain': 18,
+    'rain_showers': 19,
+    'rain_showers_hi': 20,
+    'tsra': 21,
+    'tsra_sct': 22,
+    'tsra_hi': 23,
+    'tornado': 24,
+    'hurricane': 25,
+    'tropical_storm': 26,
+    'dust': 27,
+    'smoke': 28,
+    'haze': 29,
+    'hot': 30,
+    'cold': 31,
+    'blizzard': 32,
+    'fog': 33,
+  }.entries,
+);
+
+final Map<int, int> apiToDartIconMap =
+    Map<int, int>.fromEntries(<int, int>{}.entries);
+
+final Map<int, Icons> dartIconMap =
+    Map<int, Icons>.fromEntries(<int, Icons>{}.entries);
+
+int iconStringToInt(String s) {
+  return 0;
 }
