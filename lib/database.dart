@@ -46,13 +46,14 @@ CREATE TABLE CityForecast (
   Humidity INTEGER NOT NULL,
   WindSpeed INTEGER NOT NULL,
   WindDirection TEXT NOT NULL,
+  Icon INTEGER,
   $dailyString
   $hourlyString
   StartTime INTEGER NOT NULL,
   UpdateTime INTEGER NOT NULL
 )
       ''');
-    }, version: 3);
+    }, version: 4);
   }
 
   // ----- ----- CityInfo ----- -----
@@ -231,10 +232,15 @@ then have 2 update functions for hourly and daily, for updating the relevant row
     if (cityForecast.$1 == null) return;
     int now = DateTime.now().millisecondsSinceEpoch;
     int timeSinceUpdate = now - cityForecast.$1!.updateTime;
+
+    print(DateTime.fromMillisecondsSinceEpoch(cityForecast.$1!.updateTime));
+
     if (timeSinceUpdate > 900000) {
       (CityInfo?, WeatherException?) cityInfo =
           await getCityInfoId(cityForecast.$1!.id);
       if (cityInfo.$1 == null) {
+        print('checkForecat: cityInfo is null.');
+
         return;
       }
       // check hourly
@@ -245,7 +251,11 @@ then have 2 update functions for hourly and daily, for updating the relevant row
       int updateThreshold = getUpdateThreshold(updateTime);
       if (now - updateThreshold >= 0) {
         await checkDaily(cityInfo.$1!);
+      } else {
+        print('Too soon for daily update.');
       }
+    } else {
+      print('Too soon for hourly update.');
     }
   }
 
@@ -267,9 +277,11 @@ WHERE Id = ?
 
   Future<void> checkHourly(CityInfo cityInfo) async {
     (ForecastInfo?, WeatherException?) hourlyForecast =
-        await fetchForecastDaily(cityInfo);
+        await fetchForecastHourly(cityInfo);
     if (hourlyForecast.$1 != null) {
       await updateHourly(cityInfo.id, hourlyForecast.$1!);
+    } else {
+      print('hourlyForecast is null');
     }
   }
 
@@ -288,7 +300,7 @@ WHERE Id = ?
         forecastInfo.properties.periods[0].relativeHumidity.value != null
             ? forecastInfo.properties.periods[0].relativeHumidity.value!
             : 0;
-    int _ = await db.rawUpdate('''
+    int result = await db.rawUpdate('''
 UPDATE CityForecast
 SET Temperature = ?, ProbOfPrecipitation = ?, Humidity = ?, WindSpeed = ?, WindDirection = ?, Hour0 = ?, Hour1 = ?, Hour2 = ?, Hour3 = ?, Hour4 = ?, Hour5 = ?, Hour6 = ?, Hour7 = ?, Hour8 = ?, Hour9 = ?, Hour10 = ?, Hour11 = ?, Hour12 = ?, Hour13 = ?, Hour14 = ?, Hour15 = ?, Hour16 = ?, Hour17 = ?, Hour18 = ?, Hour19 = ?, Hour20 = ?, Hour21 = ?, Hour22 = ?, Hour23 = ?, StartTime = ?, UpdateTime = ?
 WHERE Id = ?
@@ -305,6 +317,7 @@ WHERE Id = ?
       DateTime.parse(forecastInfo.properties.updated).millisecondsSinceEpoch,
       id,
     ]);
+    print('updateHourly result: $result');
   }
 }
 

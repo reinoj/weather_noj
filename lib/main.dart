@@ -185,6 +185,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> updateCurrentCity() async {
+    await widget.databaseHelper!.checkForecast(widget.currentCity!);
+    setState(() {});
+  }
+
   PreferredSizeWidget weatherAppBar() {
     return AppBar(
       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -194,7 +199,13 @@ class _HomePageState extends State<HomePage> {
         IconButton(
           onPressed: () {
             if (widget.currentCity != null) {
-              widget.databaseHelper!.checkForecast(widget.currentCity!);
+              updateCurrentCity();
+            } else {
+              exceptionSnackBar(
+                context,
+                'currentCity is null',
+                'weatherAppBar',
+              );
             }
           },
           icon: const Icon(Icons.update),

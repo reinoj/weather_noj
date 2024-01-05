@@ -114,7 +114,7 @@ class CityForecast {
   final int humidity;
   final String windSpeed;
   final String windDirection;
-  final int icon;
+  final int? icon;
   final List<int> dailyForecast;
   final List<int> hourlyForecast;
   final int startTime;
@@ -242,7 +242,7 @@ class CityForecastCompanion {
   final int humidity;
   final String windSpeed;
   final String windDirection;
-  final int icon;
+  final int? icon;
   final int day0_0;
   final int day0_1;
   final int day1_0;
